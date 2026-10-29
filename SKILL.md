@@ -8,7 +8,7 @@ metadata:
 
 # Frontend to flow map
 
-The output is one HTML file that opens offline, and optionally the same page published as a private claude.ai Artifact. It shows:
+The output is one self-contained HTML file that opens offline in any browser. It works with any coding agent that can drive a browser, run Python and read this file. It shows:
 
 - **Screens**: real captures of the product's key pages and states, grouped into labelled bands.
 - **Arrows**: one per transition between two different screens, starting at the control that triggers it. Key paths are solid; the rest are dashed and hidden by default.
@@ -20,7 +20,7 @@ There is no side panel. Everything a reader needs is on the canvas.
 
 - `assets/flow-map.html`: the page template (all UI, both languages, edit mode).
 - `scripts/render_flow.py <bundle-dir> --out <map>.html`: validates `flow-spec.json` and embeds the captures into one HTML file.
-- `scripts/to_artifact.py <map>.html --out <page>.html --title "<Two To Four Words>"`: converts the map into an Artifact page.
+- `scripts/to_artifact.py <map>.html --out <page>.html --title "<Two To Four Words>"`: optional; converts the map into a claude.ai Artifact page.
 
 A bundle directory holds `flow-spec.json` and `captures/<ID>.png`.
 
@@ -127,13 +127,21 @@ A pasted text that starts with `Flow map changes:` came from Copy for AI agent. 
 
 `comment` numbers are the page's display numbers at the time of copying; identify targets by `screen`, `transition` and `note` instead.
 
-## Publishing as an Artifact
+## Sharing
 
-1. `to_artifact.py` the rendered map with a two-to-four-word title.
-2. Publish the page with `flow-spec.json` as a supporting file, so an agent opening the artifact can read the exact spec.
+The map is one file with everything embedded, so it can be shared as an attachment or hosted on any static host (an internal file share, GitHub Pages, an S3 bucket). Hosting it keeps one link that you update in place.
+
+- Keep `flow-spec.json` next to the published page, so an agent given the link can read the exact spec.
+- If the captures show unreleased product, host it where only the intended people can open it.
+- To update, re-render and replace the file at the same location.
+
+### If your agent can publish claude.ai Artifacts
+
+1. Run `to_artifact.py` on the rendered map with a two-to-four-word title.
+2. Publish the page with `flow-spec.json` as a supporting file.
 3. Tell the person the page is private until they share it from its Share menu.
-4. To update, republish the same file path; the link stays the same.
-5. Comments people leave on the artifact are read and answered with the ArtifactComments tool. Make the change in the template or spec, re-render, republish, and reply in the thread with what changed and the new version number. Leave resolving to people.
+4. Republish the same file path to keep the link.
+5. If the agent has a tool for Artifact comments, answer comments there: make the change in the template or spec, re-render, republish, and reply with what changed and the new version. Leave resolving to people.
 
 ## Limits to state when delivering
 

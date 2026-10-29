@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kiln Tasks (fictional demo)</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; width: 1440px; height: 900px; overflow: hidden; font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2430; background: #f3f4f7; display: flex; }
+aside { width: 260px; background: #fff; border-right: 1px solid #e3e6ec; padding: 20px 16px; display: flex; flex-direction: column; gap: 6px; }
+.logo { font-weight: 800; font-size: 18px; letter-spacing: .02em; margin: 0 8px 18px; color: #3b4cca; }
+.nav { padding: 8px 10px; border-radius: 8px; color: #4a5263; display: flex; justify-content: space-between; }
+.nav.on { background: #eef0fb; color: #3b4cca; font-weight: 600; }
+.badge { background: #3b4cca; color: #fff; border-radius: 999px; padding: 0 8px; font-size: 12px; font-weight: 600; }
+main { flex: 1; padding: 28px 36px; position: relative; }
+h1 { margin: 0 0 4px; font-size: 24px; }
+.sub { color: #6b7385; margin-bottom: 20px; }
+.toolbar { display: flex; gap: 8px; margin-bottom: 16px; }
+.btn { border: 1px solid #d6dae3; background: #fff; border-radius: 8px; padding: 7px 14px; font: inherit; font-weight: 600; color: #1f2430; }
+.btn.primary { background: #3b4cca; border-color: #3b4cca; color: #fff; }
+.list { background: #fff; border: 1px solid #e3e6ec; border-radius: 12px; overflow: hidden; }
+.row { display: grid; grid-template-columns: 28px 1fr 160px 120px 110px; align-items: center; padding: 14px 18px; border-top: 1px solid #eef0f4; }
+.row:first-child { border-top: 0; }
+.row.head { color: #6b7385; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; background: #fafbfc; }
+.row .title { font-weight: 600; }
+.row .muted { color: #6b7385; font-size: 13px; }
+.box { width: 16px; height: 16px; border: 2px solid #b8bfcc; border-radius: 4px; }
+.box.done { background: #2f9e6f; border-color: #2f9e6f; }
+.row.done .title { text-decoration: line-through; color: #8a91a1; }
+.pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.p-high { background: #fde8e6; color: #b3261e; } .p-med { background: #fff2d6; color: #8a5a00; } .p-low { background: #e8edf5; color: #44506a; }
+.p-done { background: #dff3ea; color: #1f7a52; }
+.avatar { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #d9defa; color: #3b4cca; font-weight: 700; font-size: 11px; margin-right: 6px; vertical-align: middle; }
+.detail { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+.card { background: #fff; border: 1px solid #e3e6ec; border-radius: 12px; padding: 22px; }
+.card h2 { margin: 0 0 8px; font-size: 20px; }
+.meta { display: grid; grid-template-columns: 110px 1fr; row-gap: 14px; }
+.meta dt { color: #6b7385; } .meta dd { margin: 0; font-weight: 600; }
+.check { display: flex; gap: 10px; align-items: center; padding: 8px 0; }
+.back { color: #3b4cca; font-weight: 600; margin-bottom: 14px; display: inline-block; }
+.scrim { position: absolute; inset: 0; background: rgba(20, 24, 36, .38); display: grid; place-items: center; }
+.dialog { width: 460px; background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+.dialog h3 { margin: 0 0 16px; font-size: 18px; }
+.person { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #e3e6ec; border-radius: 10px; margin-bottom: 8px; }
+.person.sel { border-color: #3b4cca; background: #f4f5fd; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.toast { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); background: #1f2430; color: #fff; padding: 10px 16px; border-radius: 10px; font-weight: 600; }
+</style>
+</head>
+<body>
+<aside>
+  <div class="logo">KILN</div>
+  <div class="nav on"><span>My tasks</span><span class="badge" id="count">4</span></div>
+  <div class="nav"><span>Team board</span></div>
+  <div class="nav"><span>Calendar</span></div>
+  <div class="nav"><span>Settings</span></div>
+</aside>
+<main id="main"></main>
+<script>
+const tasks = [
+  { id: 1, title: "Glaze test tiles for spring set", due: "Today", pr: "high", who: "MS" },
+  { id: 2, title: "Order 20 kg stoneware clay", due: "Tomorrow", pr: "med", who: "JR" },
+  { id: 3, title: "Photograph mug batch", due: "Fri", pr: "low", who: "AL" },
+  { id: 4, title: "Update studio class schedule", due: "Next week", pr: "med", who: "MS" },
+];
+const prLabel = { high: "High", med: "Medium", low: "Low" };
+const state = location.hash.slice(1) || "list";
+const main = document.getElementById("main");
+const listHtml = (doneFirst) => `
+  <h1>My tasks</h1><div class="sub">Sample workspace · Pottery studio</div>
+  <div class="toolbar"><button class="btn primary">+ New task</button><button class="btn">Filter</button><button class="btn">Sort: Due date</button></div>
+  <div class="list">
+    <div class="row head"><span></span><span>Task</span><span>Due</span><span>Priority</span><span>Owner</span></div>
+    ${tasks.map(t => {
+      const done = doneFirst && t.id === 1;
+      return `<div class="row ${done ? "done" : ""}" id="row-${t.id}"><span class="box ${done ? "done" : ""}"></span><span class="title">${t.title}</span>
+      <span class="muted">${t.due}</span><span><span class="pill ${done ? "p-done" : "p-" + t.pr}">${done ? "Done" : prLabel[t.pr]}</span></span><span><span class="avatar">${t.who}</span></span></div>`;
+    }).join("")}
+  </div>`;
+const detailHtml = (dialog) => `
+  <span class="back">← My tasks</span>
+  <div class="detail">
+    <div class="card"><h2>Glaze test tiles for spring set</h2><div class="sub">Try three celadon recipes on the new clay body before the spring sale.</div>
+      <div class="check"><span class="box done"></span>Mix recipe A</div>
+      <div class="check"><span class="box done"></span>Mix recipe B</div>
+      <div class="check"><span class="box"></span>Fire test tiles to cone 6</div>
+      <div class="toolbar" style="margin-top:18px"><button class="btn primary" id="done-btn">Mark as done</button><button class="btn" id="assign-btn">Assign</button></div>
+    </div>
+    <div class="card"><dl class="meta"><dt>Due</dt><dd>Today</dd><dt>Priority</dt><dd><span class="pill p-high">High</span></dd><dt>Owner</dt><dd><span class="avatar">MS</span>Mina S.</dd><dt>Project</dt><dd>Spring set</dd></dl></div>
+  </div>
+  ${dialog ? `<div class="scrim"><div class="dialog"><h3>Assign task</h3>
+    <div class="person sel"><span class="avatar">MS</span>Mina S.</div>
+    <div class="person"><span class="avatar">JR</span>Jun R.</div>
+    <div class="person"><span class="avatar">AL</span>Ada L.</div>
+    <div class="actions"><button class="btn">Cancel</button><button class="btn primary" id="save-btn">Save</button></div></div></div>` : ""}`;
+main.innerHTML = { list: listHtml(false), detail: detailHtml(false), assign: detailHtml(true), done: listHtml(true) + '<div class="toast">Task marked as done</div>' }[state];
+if (state === "done") document.getElementById("count").textContent = "3";
+</script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "flow-1",
+  "title": {"en": "Kiln Tasks (demo)", "ja": "Kiln Tasks（デモ）"},
+  "defaultLang": "en",
+  "viewport": {"width": 1440, "height": 900},
+  "bands": [
+    {"title": {"en": "Task list", "ja": "タスク一覧"}, "screens": ["LST-01"]},
+    {"title": {"en": "Working on a task", "ja": "タスクの作業"}, "screens": ["DET-01", "DLG-01", "LST-02"]}
+  ],
+  "screens": [
+    {
+      "id": "LST-01",
+      "title": {"en": "My tasks", "ja": "マイタスク"},
+      "grid": {"col": 0, "row": 1},
+      "capture": "captures/LST-01.png",
+      "notes": [
+        {"anchor": {"x": 209, "y": 78, "w": 24, "h": 20},
+         "text": {"en": "The count shows open tasks only.", "ja": "数字は未完了のタスクだけを数えます。"}},
+        {"anchor": {"x": 1155, "y": 223, "w": 48, "h": 21},
+         "text": {"en": "Priority is set by the owner; High sorts first within a due date.", "ja": "優先度は担当者が設定し、同じ期日の中では High が先頭に並びます。"}}
+      ]
+    },
+    {
+      "id": "DET-01",
+      "title": {"en": "Task detail", "ja": "タスク詳細"},
+      "grid": {"col": 1, "row": 1},
+      "capture": "captures/DET-01.png",
+      "notes": [
+        {"anchor": {"x": 319, "y": 243, "w": 180, "h": 20},
+         "text": {"en": "Checklist items can stay open; Mark as done still completes the task.", "ja": "チェックリストが残っていても「Mark as done」でタスクを完了できます。"}}
+      ]
+    },
+    {
+      "id": "DLG-01",
+      "title": {"en": "Assign dialog", "ja": "担当者の変更"},
+      "grid": {"col": 2, "row": 0},
+      "capture": "captures/DLG-01.png",
+      "notes": [
+        {"anchor": {"x": 644, "y": 365, "w": 412, "h": 48},
+         "text": {"en": "The current owner is selected when the dialog opens.", "ja": "ダイアログを開くと現在の担当者が選択されています。"}}
+      ]
+    },
+    {
+      "id": "LST-02",
+      "title": {"en": "List after completing", "ja": "完了後の一覧"},
+      "grid": {"col": 2, "row": 2},
+      "capture": "captures/LST-02.png",
+      "notes": [
+        {"anchor": {"x": 209, "y": 78, "w": 24, "h": 20},
+         "text": {"en": "The count drops from 4 to 3.", "ja": "数字が 4 から 3 に減ります。"}},
+        {"anchor": {"x": 297, "y": 206, "w": 300, "h": 55},
+         "text": {"en": "The task stays in the list, struck through, until the page is reloaded.", "ja": "完了したタスクは再読み込みまで取り消し線付きで一覧に残ります。"}}
+      ]
+    }
+  ],
+  "transitions": [
+    {"id": "TR-01", "from": "LST-01", "to": "DET-01", "key": true,
+     "anchor": {"x": 297, "y": 206, "w": 600, "h": 55},
+     "trigger": {"en": "Click a task row", "ja": "タスクの行をクリック"},
+     "effect": {"en": "Opens the task detail.", "ja": "タスクの詳細を開きます。"}},
+    {"id": "TR-02", "from": "DET-01", "to": "DLG-01",
+     "anchor": {"x": 447, "y": 289, "w": 76, "h": 36},
+     "trigger": {"en": "Click “Assign”", "ja": "「Assign」をクリック"},
+     "effect": {"en": "Opens the assign dialog over the detail.", "ja": "詳細の上に担当者ダイアログを開きます。"}},
+    {"id": "TR-03", "from": "DLG-01", "to": "DET-01", "isReturn": true,
+     "anchor": {"x": 994, "y": 541, "w": 62, "h": 36},
+     "trigger": {"en": "Click “Save”", "ja": "「Save」をクリック"},
+     "effect": {"en": "Saves the new owner and closes the dialog.", "ja": "新しい担当者を保存してダイアログを閉じます。"}},
+    {"id": "TR-04", "from": "DET-01", "to": "LST-02", "key": true,
+     "anchor": {"x": 319, "y": 289, "w": 120, "h": 36},
+     "trigger": {"en": "Click “Mark as done”", "ja": "「Mark as done」をクリック"},
+     "effect": {"en": "Completes the task and returns to the list with a confirmation.", "ja": "タスクを完了し、確認メッセージ付きで一覧に戻ります。"}},
+    {"id": "TR-05", "from": "DET-01", "to": "LST-01", "isReturn": true,
+     "anchor": {"x": 296, "y": 28, "w": 77, "h": 20},
+     "trigger": {"en": "Click “← My tasks”", "ja": "「← My tasks」をクリック"},
+     "effect": {"en": "Back to the list without changes.", "ja": "変更せずに一覧に戻ります。"}}
+  ]
+}
