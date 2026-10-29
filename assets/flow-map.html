@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>__TITLE__</title>
+<style>
+:root {
+  --bg: #eceae3;
+  --band: rgba(255, 255, 255, 0.4);
+  --band-line: #d3cec2;
+  --ink: #26241f;
+  --muted: #6b675d;
+  --card: #fffef9;
+  --card-line: #e2ddd0;
+  --key: #c2562b;
+  --other: #8a8578;
+  --pin: #c2562b;
+  --note: #3d6e8f;
+  --req: #7b4fa6;
+  --chip: #f3efe4;
+  --ui: #ffffff;
+  --ui-line: #dcd7cb;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1d1c1a; --band: rgba(255,255,255,0.03); --band-line: #3a3833; --ink: #ece8de; --muted: #a39e92;
+    --card: #2a2825; --card-line: #3f3c36; --key: #e27a4f; --other: #8f897c; --pin: #e27a4f; --note: #6fa3c6; --req: #b28fd6;
+    --chip: #34322d; --ui: #262421; --ui-line: #3d3a34;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif; }
+#viewport { position: fixed; inset: 0; cursor: grab; touch-action: none; outline: none; }
+#viewport.dragging { cursor: grabbing; }
+#world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+#world.animate { transition: transform 420ms cubic-bezier(.2,.7,.2,1); }
+
+.band { position: absolute; border: 3px dashed var(--band-line); border-radius: 48px; background: var(--band); }
+.band-label { position: absolute; left: 56px; top: 40px; white-space: nowrap;
+  font-weight: 700; color: var(--muted); font-size: min(320px, max(64px, calc(16px * var(--inv)))); line-height: 1; }
+
+.screen { position: absolute; border-radius: 18px; box-shadow: 0 6px 30px rgba(0,0,0,.14); background: #fff; cursor: zoom-in; }
+.screen img { display: block; width: 100%; height: 100%; border-radius: 18px; }
+.screen-title { position: absolute; left: 0; bottom: 100%; margin-bottom: 22px; max-width: calc(100% + var(--side));
+  display: flex; align-items: baseline; gap: 0.5em; white-space: nowrap; overflow: hidden;
+  font-size: min(190px, max(44px, calc(13px * var(--inv)))); font-weight: 650; line-height: 1.1; }
+.screen-title .name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.screen-title .sid { flex: none; font: 600 0.55em/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+body:not([data-ids="on"]) .screen-title .sid { display: none; }
+/* Copies "ID · title", a precise name to paste into a request for changes. */
+.copy { flex: none; align-self: center; font-size: inherit; width: 0.8em; height: 0.8em; padding: 0.1em; border: 0; border-radius: 0.2em;
+  background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+.copy svg { width: 100%; height: 100%; }
+.copy:hover, .copy:focus-visible { background: var(--chip); color: var(--ink); outline: none; }
+.copy.done { color: var(--key); }
+#toast { position: fixed; left: 50%; top: 80px; transform: translateX(-50%); z-index: 30; padding: 6px 12px; border-radius: 8px;
+  background: var(--ink); color: var(--bg); font-size: 13px; pointer-events: none; }
+#toast[hidden] { display: none; }
+#world.has-focus .screen:not(.lit) { opacity: .45; }
+#world .screen, #world .comments { transition: opacity 160ms; }
+#world.has-focus .comments:not(.lit) { opacity: .45; }
+
+/* A pin's pointed corner touches the top corner of what it marks, and its body sits
+ * outside that area, so the marked control stays visible. */
+.pin { position: absolute; width: var(--pin-size); height: var(--pin-size); margin: calc(var(--pin-size) * -1) 0 0 0; padding: 0;
+  border-radius: 50% 50% 50% 4px; background: var(--pin); color: #fff; display: grid; place-items: center; cursor: pointer;
+  font: 700 calc(var(--pin-size) * 0.5)/1 inherit; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  border: calc(var(--pin-size) * 0.08) solid #fff; z-index: 2; transition: transform 120ms; transform-origin: 0 100%; }
+.pin.flip { margin-left: calc(var(--pin-size) * -1); border-radius: 50% 50% 4px 50%; transform-origin: 100% 100%; }
+.pin.note { background: var(--note); }
+.pin:hover, .pin.on, .pin:focus-visible { transform: scale(1.25); outline: none; z-index: 3; }
+.hl-ring { position: absolute; border: 6px solid var(--pin); border-radius: 10px; pointer-events: none; opacity: 0; transition: opacity 120ms; }
+.hl-ring.note { border-color: var(--note); }
+.hl-ring.on { opacity: 1; }
+.card.on { box-shadow: 0 0 0 6px var(--pin); }
+.card.note.on { box-shadow: 0 0 0 6px var(--note); }
+
+/* The pin's comment, shown at screen size beside the pin on hover or click. */
+#bubble { position: fixed; z-index: 20; max-width: 340px; background: var(--card); border: 1px solid var(--card-line);
+  border-radius: 12px; padding: 12px 14px 12px 46px; font-size: 14px; line-height: 1.45; box-shadow: 0 8px 28px rgba(0,0,0,.18); }
+#bubble[hidden] { display: none; }
+#bubble .num { position: absolute; left: 12px; top: 12px; width: 24px; height: 24px; border-radius: 50% 50% 50% 3px;
+  background: var(--pin); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+#bubble.note .num { background: var(--note); }
+#bubble .trigger { font-weight: 650; }
+#bubble .effect { color: var(--muted); }
+#bubble .go { margin-top: 8px; display: inline-flex; gap: 6px; align-items: center; padding: 3px 10px; border-radius: 999px;
+  background: var(--chip); border: 1px solid var(--card-line); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+#bubble .go:hover, #bubble .go:focus-visible { border-color: var(--key); outline: none; }
+#bubble .back { color: var(--muted); }
+
+#navigator { position: fixed; z-index: 10; right: max(16px, env(safe-area-inset-right, 0px)); bottom: 16px; display: flex; flex-direction: column;
+  background: var(--ui); border: 1px solid var(--ui-line); border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,.08); overflow: hidden; }
+#minimap { padding: 8px; cursor: pointer; touch-action: none; border-bottom: 1px solid var(--ui-line); display: flex; justify-content: center; }
+#zoom { display: flex; align-items: center; justify-content: space-between; gap: 2px; padding: 4px; }
+#minimap svg { display: block; }
+#minimap .m-band { fill: var(--band-line); opacity: .35; }
+#minimap .m-screen { fill: var(--other); }
+#minimap .m-view { fill: rgba(194, 86, 43, .12); stroke: var(--key); }
+@media (max-width: 720px) { #minimap { display: none; } }
+
+/* Edit mode: text is editable in place, controls appear on each card, and a click on a
+ * screen drops a new pin. Requests are dashed: they ask the agent to look into something. */
+.edit-bar { display: none; margin-top: 12px; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 20px; }
+body[data-edit="on"] .edit-bar { display: flex; }
+.edit-bar button, .edit-bar label { font: inherit; font-size: 20px; color: var(--muted); background: var(--chip);
+  border: 2px solid var(--card-line); border-radius: 999px; padding: 4px 14px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.edit-bar button:hover, .edit-bar label:hover, .edit-bar button[aria-pressed="true"] { color: var(--ink); border-color: var(--key); }
+.edit-bar input { width: 18px; height: 18px; accent-color: var(--key); }
+body[data-edit="on"] [data-field] { outline: 2px dashed transparent; outline-offset: 4px; border-radius: 6px; cursor: text; }
+body[data-edit="on"] [data-field]:hover, body[data-edit="on"] [data-field]:focus { outline-color: var(--card-line); }
+body[data-edit="on"] [data-field]:focus { outline-color: var(--key); }
+[data-field]:empty::before { content: attr(data-placeholder); color: var(--muted); }
+.card.changed { border-style: solid; border-color: var(--note); }
+.card.deleted { opacity: .5; }
+.card.deleted [data-field] { text-decoration: line-through; }
+.pin.deleted { opacity: .35; }
+.card.request { border-style: dashed; border-color: var(--req); }
+.card.request .num, .pin.request, #bubble.request .num { background: var(--req); }
+.hl-ring.request { border-color: var(--req); }
+.add-request { display: none; font: inherit; font-size: 22px; color: var(--muted); background: transparent;
+  border: 2px dashed var(--card-line); border-radius: 22px; padding: 18px; cursor: pointer; }
+body[data-edit="on"] .add-request { display: block; }
+.add-request:hover { color: var(--ink); border-color: var(--req); }
+body[data-edit="on"] .screen { cursor: crosshair; }
+/* On/off settings are switches: a track with a knob that slides right when on. */
+.toggle { display: inline-flex; align-items: center; gap: 8px; }
+.toggle .track { position: relative; width: 28px; height: 16px; border-radius: 999px; background: var(--ui-line); transition: background 150ms; flex: none; }
+.toggle .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--ui); box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform 150ms; }
+.toggle[aria-checked="true"] .track { background: var(--key); }
+.toggle[aria-checked="true"] .track::after { transform: translateX(12px); }
+@media (prefers-reduced-motion: reduce) { .toggle .track, .toggle .track::after { transition: none; } }
+#changes-btn { font-weight: 600; color: var(--key); }
+/* Shown while edit mode is on, until dismissed: what can be done and where it ends up. */
+#edit-hint { position: fixed; z-index: 9; left: 16px; top: 76px; max-width: min(560px, calc(100vw - 32px)); display: flex; gap: 10px; align-items: flex-start;
+  background: var(--ui); border: 1px solid var(--ui-line); border-left: 3px solid var(--key); border-radius: 10px; padding: 10px 12px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.08); font-size: 13px; line-height: 1.5; }
+#edit-hint ol, #changes .howto ol { margin: 4px 0 0; padding-left: 18px; }
+#edit-hint strong { display: block; }
+#edit-hint button { flex: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; }
+#changes .howto { color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--ui-line); line-height: 1.5; }
+#changes .howto strong { color: var(--ink); }
+#changes { position: fixed; z-index: 15; right: 16px; top: 68px; width: min(440px, calc(100vw - 32px)); max-height: 70vh;
+  display: flex; flex-direction: column; background: var(--ui); border: 1px solid var(--ui-line); border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.16); font-size: 13px; }
+#changes[hidden] { display: none; }
+#changes header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--ui-line); }
+#changes header strong { font-size: 14px; }
+#changes .list { overflow: auto; padding: 8px 14px; display: flex; flex-direction: column; gap: 12px; }
+#changes .group-title { font-weight: 650; }
+#changes .item { display: flex; gap: 8px; align-items: flex-start; padding: 4px 0; }
+#changes .item span { flex: 1; min-width: 0; overflow-wrap: anywhere; color: var(--ink); }
+#changes .item .hint { color: var(--muted); }
+#changes .item button { flex: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; padding: 0 4px; }
+#changes .item button:hover { color: var(--key); }
+#changes .empty { color: var(--muted); padding: 8px 0; }
+#changes footer { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--ui-line); justify-content: flex-end; }
+#changes footer button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer; border: 1px solid var(--ui-line); background: var(--ui); color: var(--ink); }
+#changes footer .primary { background: var(--key); border-color: var(--key); color: #fff; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+
+.comments { position: absolute; display: flex; flex-direction: column; gap: 22px; }
+.card { position: relative; background: var(--card); border: 2px solid var(--card-line); border-radius: 22px;
+  padding: 22px 26px 22px 84px; font-size: 25px; line-height: 1.45; box-shadow: 0 2px 10px rgba(0,0,0,.06); cursor: default; }
+.card.key { border-color: var(--key); }
+.card .num { position: absolute; left: 22px; top: 20px; width: 44px; height: 44px; border-radius: 50% 50% 50% 6px;
+  background: var(--pin); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 22px; }
+.card.note .num { background: var(--note); }
+.card .trigger { font-weight: 650; }
+.card .effect { color: var(--muted); }
+.card .go { margin-top: 10px; display: inline-flex; align-items: center; gap: 10px; padding: 6px 16px 6px 12px;
+  border-radius: 999px; background: var(--chip); border: 2px solid var(--card-line); color: var(--ink);
+  font: inherit; font-size: 22px; cursor: pointer; }
+.card .go:hover, .card .go:focus-visible { border-color: var(--key); outline: none; }
+.card .go .sid { font: 600 18px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+.card .back { font-size: 20px; color: var(--muted); }
+#world[data-lod="far"] .comments { visibility: hidden; }
+#world[data-lod="far"] .leaders { visibility: hidden; }
+
+svg.layer { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.edge path.line { fill: none; stroke-linecap: round; }
+.edge.key path.line { stroke: var(--key); }
+.edge.other path.line { stroke: var(--other); }
+.edge.key path.head { fill: var(--key); }
+.edge.other path.head { fill: var(--other); }
+.edge.other { opacity: .7; }
+#world.mode-key .edge.other { display: none; }
+#world.mode-key .edge.other.lit { display: inline; }
+#world.has-focus .edge:not(.lit) { opacity: .12; }
+.edge circle.start { fill: var(--card); }
+.edge.key circle.start { stroke: var(--key); }
+.edge.other circle.start { stroke: var(--other); }
+/* A leader appears only while its card is hovered; numbers pair pins and cards otherwise. */
+.leaders line { stroke: var(--pin); opacity: 0; transition: opacity 120ms; }
+.leaders line.lit { opacity: 1; }
+
+.toolbar { position: fixed; z-index: 10; display: flex; align-items: center; gap: 6px; padding: 6px;
+  background: var(--ui); border: 1px solid var(--ui-line); border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
+#top { left: max(16px, env(safe-area-inset-left, 0px)); top: 16px; max-width: calc(100vw - 32px); }
+#actions { right: max(16px, env(safe-area-inset-right, 0px)); top: 16px; }
+#view-menu { position: absolute; left: 0; top: calc(100% + 6px); min-width: 240px; display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+  padding: 10px; background: var(--ui); border: 1px solid var(--ui-line); border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.14); }
+#view-menu[hidden] { display: none; }
+#view-menu .seg { align-self: flex-start; }
+#view-menu .toggle { justify-content: flex-start; }
+#view-menu .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; padding: 8px 6px 2px; border-top: 1px solid var(--ui-line); margin-top: 4px; }
+#view-btn[aria-expanded="true"] { background: var(--chip); }
+.toolbar h1 { margin: 0 8px; font-size: 15px; font-weight: 700; white-space: nowrap; }
+.seg { display: inline-flex; background: var(--bg); border-radius: 9px; padding: 2px; }
+.seg button, .tool { border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 13px;
+  padding: 6px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--ui); box-shadow: 0 1px 3px rgba(0,0,0,.12); font-weight: 600; }
+.tool[aria-pressed="true"] { background: var(--chip); font-weight: 600; }
+.tool:hover, .seg button:hover { background: var(--chip); }
+.tool:focus-visible, .seg button:focus-visible { outline: 2px solid var(--key); outline-offset: 1px; }
+.sep { width: 1px; align-self: stretch; background: var(--ui-line); margin: 0 4px; }
+#pct { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+.legend { display: flex; gap: 12px; align-items: center; color: var(--muted); font-size: 12px; padding: 0 6px; }
+.legend i { display: inline-block; width: 22px; height: 0; border-top: 3px solid var(--key); vertical-align: middle; margin-right: 4px; }
+.legend i.other { border-top: 2px dashed var(--other); }
+.legend b { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50% 50% 50% 3px;
+  background: var(--pin); color: #fff; font-size: 10px; margin-right: 4px; vertical-align: middle; }
+.legend b.note { background: var(--note); }
+
+</style>
+</head>
+<body>
+<!-- Like FigJam: the file name and its view settings at top left, editing at top right. -->
+<div class="toolbar" id="top">
+  <h1 id="doc-title"></h1>
+  <div class="sep"></div>
+  <button type="button" class="tool" id="view-btn" aria-expanded="false" aria-controls="view-menu"><span class="label"></span> <span aria-hidden="true">▾</span></button>
+  <div id="view-menu" hidden>
+    <div class="seg" role="group" id="lang-seg">
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="ja">日本語</button>
+    </div>
+    <button type="button" class="tool toggle" id="paths-toggle" role="switch" aria-checked="false"><span class="track" aria-hidden="true"></span><span class="label"></span></button>
+    <button type="button" class="tool toggle" id="ids-toggle" role="switch" aria-checked="false"><span class="track" aria-hidden="true"></span><span class="label"></span></button>
+    <div class="legend" id="legend"></div>
+  </div>
+</div>
+<div class="toolbar" id="actions">
+  <button type="button" class="tool toggle" id="edit-toggle" role="switch" aria-checked="false"><span class="track" aria-hidden="true"></span><span class="label"></span></button>
+  <button type="button" class="tool" id="changes-btn" aria-expanded="false" hidden></button>
+</div>
+<!-- Bottom right, as in Figma: where you are (minimap) and how close you are (zoom), together. -->
+<div id="navigator">
+<div id="minimap" aria-hidden="true"></div>
+<div id="zoom">
+  <button type="button" class="tool" id="zoom-out">−</button>
+  <span id="pct">100%</span>
+  <button type="button" class="tool" id="zoom-in">+</button>
+  <div class="sep"></div>
+  <button type="button" class="tool" id="fit"></button>
+</div>
+</div>
+<div id="bubble" role="dialog" hidden></div>
+<div id="toast" role="status" hidden></div>
+<section id="changes" aria-label="Changes" hidden></section>
+<div id="edit-hint" role="note" hidden></div>
+<div id="viewport" tabindex="0">
+  <div id="world"></div>
+</div>
+<script>
+const D = __PAYLOAD__;
+const UI = {
+  en: { key: "Key paths", all: "All paths", fit: "Fit all", ids: "Page IDs", view: "View", copy: "Copy page name", copied: "Copied", edit: "Edit mode", changes: "Changes", copyChanges: "Copy for AI agent", clear: "Clear all", clearConfirm: "Click again to clear", undo: "Undo", del: "Delete", restore: "Restore", keyPath: "Key path", noteKind: "Add note", requestKind: "Ask AI agent", noteKindTip: "Adds this text to the map as a note, as written.", requestKindTip: "Not added as text. The AI agent checks the prototype and updates this map. It does not change the product.", notePh: "Write a note…", requestPh: "What should the AI agent check or update on this map?", addRequest: "+ Ask the AI agent about this page", empty: "No changes yet. Turn on Edit mode, then edit text, delete comments, switch key paths or click a screen to add a pin.", needsTr: "Japanese needs updating", needsTrJa: "English needs updating", edited: "edited", deletedL: "delete", keyOn: "make key path", keyOff: "remove key path", newNote: "new note", newRequest: "ask AI agent", page: "page", copiedChanges: "Copied. Paste it to your AI agent (for example Claude Code).",
+        hintTitle: "Edit mode", hintSteps: ["Click any comment text to change it.", "Click a spot on a screen to add a pin. Choose “Add note” to add text to the map, or “Ask AI agent” to have the AI agent check the prototype and update the map.", "Use Key path or Delete on a card, or “+ Ask the AI agent about this page”.", "Open Changes, click “Copy for AI agent”, then paste it to your AI agent (for example Claude Code). It updates the map."], hideHint: "Hide tips",
+        howtoTitle: "How this works", howtoSteps: ["Turn on Edit mode and make your changes on the canvas.", "Check them here. Undo any you don't want.", "Click “Copy for AI agent” and paste it to your AI agent (for example Claude Code). It applies them to the map and republishes it."], keyLegend: "Key path", otherLegend: "Other path",
+        action: "Interaction", note: "Note", back: "Returns to", go: "Go to", map: "Flow map. Drag to pan, Ctrl or ⌘ + scroll to zoom, 0 to fit." },
+  ja: { key: "主要フロー", all: "すべてのフロー", fit: "全体表示", ids: "ページ ID", view: "表示", copy: "ページ名をコピー", copied: "コピーしました", edit: "編集モード", changes: "変更", copyChanges: "AI エージェント用にコピー", clear: "すべて取り消す", clearConfirm: "もう一度クリックで取り消し", undo: "元に戻す", del: "削除", restore: "元に戻す", keyPath: "主要フロー", noteKind: "補足を追加", requestKind: "AI エージェントに依頼", noteKindTip: "書いたとおりに補足としてマップに追加されます。", requestKindTip: "文言としては追加されません。AI エージェントがプロトタイプを確認してこのマップを更新します。製品は変更しません。", notePh: "補足を入力…", requestPh: "このマップで AI エージェントに確認・更新してほしいことは？", addRequest: "+ このページについて AI エージェントに依頼", empty: "変更はまだありません。「編集モード」をオンにして、文言の編集、コメントの削除、主要フローの切り替え、画面クリックでのピン追加ができます。", needsTr: "日本語の更新が必要", needsTrJa: "英語の更新が必要", edited: "編集", deletedL: "削除", keyOn: "主要フローにする", keyOff: "主要フローから外す", newNote: "新しい補足", newRequest: "AI エージェントに依頼", page: "ページ", copiedChanges: "コピーしました。AI エージェント（Claude Code など）に貼り付けてください。",
+        hintTitle: "編集モード", hintSteps: ["コメントの文言をクリックすると編集できます。", "画面上の位置をクリックするとピンを追加できます。マップに説明を足すなら「補足を追加」、AI エージェントにプロトタイプを確認してマップを更新してほしいときは「AI エージェントに依頼」を選びます。", "カードの「主要フロー」や「削除」、または「+ このページについて AI エージェントに依頼」も使えます。", "「変更」を開いて「AI エージェント用にコピー」し、AI エージェント（Claude Code など）に貼り付けると、マップが更新されます。"], hideHint: "ヒントを閉じる",
+        howtoTitle: "使い方", howtoSteps: ["「編集モード」をオンにして、キャンバス上で変更します。", "ここで変更を確認し、不要なものは元に戻します。", "「AI エージェント用にコピー」して AI エージェント（Claude Code など）に貼り付けると、マップに反映して再公開します。"], keyLegend: "主要フロー", otherLegend: "その他の遷移",
+        action: "操作", note: "補足", back: "戻り先", go: "移動", map: "フローマップ。ドラッグで移動、Ctrl または ⌘ + スクロールで拡大縮小、0 で全体表示。" },
+};
+const W = D.viewport.width, H = D.viewport.height, GAP = 70, CW = D.commentWidth || 620;
+const screens = D.screens, byId = Object.fromEntries(screens.map(s => [s.id, s]));
+const viewport = document.getElementById("viewport"), world = document.getElementById("world");
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+                set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+let lang = store.get("flow-lang") || D.defaultLang || "en";
+if (!UI[lang]) lang = "en";
+let mode = store.get("flow-mode") || "key";
+let showIds = store.get("flow-ids") === "on";
+let scale = 1, tx = 0, ty = 0, focusId = null;
+const t = v => (v && typeof v === "object") ? (v[lang] ?? v.en ?? "") : (v ?? "");
+const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+const SVG = "http://www.w3.org/2000/svg";
+const sv = (tag, attrs) => { const n = document.createElementNS(SVG, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
+
+// Edits live in this browser until they are copied and applied to flow-spec.json.
+const EDIT_KEY = "flow-edits:" + (D.title.en || D.title);
+let edits = (() => { try { return JSON.parse(store.get(EDIT_KEY)) || null; } catch (e) { return null; } })() || {};
+edits.text ??= {}; edits.del ??= {}; edits.key ??= {}; edits.adds ??= [];
+let editMode = false;
+function saveEdits() { store.set(EDIT_KEY, JSON.stringify(edits)); updateChangesButton(); if (!document.getElementById("changes").hidden) renderChanges(); }
+const effKey = tr => edits.key[tr.id] ?? !!tr.key;
+
+// Comments for one screen: interactions that start here, its notes, then pins added in edit mode.
+function commentsFor(s) {
+  const list = [];
+  for (const tr of D.transitions.filter(x => x.from === s.id)) list.push({ kind: "action", tr, anchor: tr.anchor, key: "tr:" + tr.id });
+  (s.notes || []).forEach((n, i) => list.push({ kind: "note", note: n, anchor: n.anchor, key: `note:${s.id}:${i}`, index: i }));
+  for (const a of edits.adds.filter(a => a.screen === s.id)) list.push({ kind: a.kind, add: a, anchor: a.anchor, key: "add:" + a.id });
+  list.forEach((c, i) => c.num = i + 1);
+  return list;
+}
+function original(c, field) { return c.kind === "action" ? c.tr[field] : c.note.text; }
+function shown(c, field) {
+  if (c.add) return c.add.text;
+  return edits.text[`${c.key}|${field}|${lang}`] ?? t(original(c, field));
+}
+
+// The text of one comment, shared by its card (editable in edit mode) and its pin bubble.
+function fillComment(node, c, editable) {
+  const field = (cls, name) => {
+    const d = el("div", cls, shown(c, name));
+    if (editable) {
+      d.dataset.field = name; d.contentEditable = editMode ? "plaintext-only" : "false";
+      if (c.add) d.dataset.placeholder = UI[lang][c.kind === "request" ? "requestPh" : "notePh"];
+      d.addEventListener("blur", () => commitText(c, name, d.innerText.trim()));
+      d.addEventListener("keydown", e => { if (e.key === "Escape") d.blur(); });
+    }
+    return d;
+  };
+  if (c.kind === "action") {
+    const tr = c.tr;
+    node.append(field("trigger", "trigger"), field("effect", "effect"));
+    if (tr.from !== tr.to) {
+      const go = el("button", "go"); go.type = "button";
+      if (tr.isReturn) go.append(el("span", "back", "↩ " + UI[lang].back));
+      go.append(document.createTextNode((tr.isReturn ? "" : "→ ") + t(byId[tr.to].title)));
+      go.addEventListener("click", e => { e.stopPropagation(); hideBubble(true); flyTo(tr.to); });
+      node.append(go);
+    }
+  } else {
+    node.append(field("", "text"));
+  }
+}
+function commitText(c, name, text) {
+  if (c.add) { if (c.add.text !== text) { c.add.text = text; c.add.lang = lang; saveEdits(); } return; }
+  const k = `${c.key}|${name}|${lang}`;
+  if (text === t(original(c, name))) delete edits.text[k]; else edits.text[k] = text;
+  c.card?.classList.toggle("changed", isChanged(c));
+  saveEdits();
+}
+function isChanged(c) {
+  return Object.keys(edits.text).some(k => k.startsWith(c.key + "|")) || (c.kind === "action" && c.tr.id in edits.key);
+}
+// Edit controls on a card: switch key path, change a new pin's kind, delete or restore.
+function editBar(c) {
+  const bar = el("div", "edit-bar");
+  if (c.kind === "action" && c.tr.from !== c.tr.to && !c.tr.isReturn) {
+    const lab = el("label"); const box = el("input"); box.type = "checkbox"; box.checked = effKey(c.tr);
+    box.addEventListener("change", () => {
+      if (box.checked === !!c.tr.key) delete edits.key[c.tr.id]; else edits.key[c.tr.id] = box.checked;
+      saveEdits(); rebuild();
+    });
+    lab.append(box, UI[lang].keyPath); bar.append(lab);
+  }
+  if (c.add) {
+    for (const kind of ["note", "request"]) {
+      const b = el("button", "", UI[lang][kind + "Kind"]); b.type = "button"; b.setAttribute("aria-pressed", String(c.add.kind === kind)); b.title = UI[lang][kind + "KindTip"];
+      b.addEventListener("click", () => { c.add.kind = kind; saveEdits(); rebuild(); });
+      bar.append(b);
+    }
+  }
+  const del = el("button", "", c.add ? UI[lang].del : (edits.del[c.key] ? UI[lang].restore : UI[lang].del)); del.type = "button";
+  del.addEventListener("click", () => {
+    if (c.add) edits.adds = edits.adds.filter(a => a !== c.add);
+    else if (edits.del[c.key]) delete edits.del[c.key]; else edits.del[c.key] = true;
+    saveEdits(); rebuild();
+  });
+  bar.append(del);
+  return bar;
+}
+function addPin(screenId, anchor, kind) {
+  const a = { id: Date.now().toString(36), screen: screenId, anchor, kind, text: "", lang };
+  edits.adds.push(a); saveEdits(); rebuild();
+  requestAnimationFrame(() => world.querySelector(`.card[data-key="add:${a.id}"] [data-field]`)?.focus({ preventScroll: true }));
+}
+function rebuild() { build(); apply(false); }
+
+// Pin, outline, card, leader and arrow of one comment light up together.
+function activate(c, on) {
+  c.pin?.classList.toggle("on", on);
+  c.ring?.classList.toggle("on", on);
+  c.card?.classList.toggle("on", on);
+  c.leader?.classList.toggle("lit", on);
+  if (c.kind === "action") litEdge(c.tr.id, on);
+}
+
+const bubble = document.getElementById("bubble");
+let openComment = null, bubbleComment = null;
+function showBubble(c, keep) {
+  if (bubbleComment && bubbleComment !== c) activate(bubbleComment, false);
+  if (openComment && openComment !== c) activate(openComment, false);
+  bubbleComment = c;
+  if (keep) openComment = c;
+  activate(c, true);
+  bubble.replaceChildren(el("span", "num", String(c.num)));
+  bubble.className = c.kind;
+  fillComment(bubble, c, false);
+  bubble.hidden = false;
+  const r = c.pin.getBoundingClientRect(), b = bubble.getBoundingClientRect();
+  let x = r.right + 10, y = r.top - 6;
+  if (x + b.width > innerWidth - 12) x = r.left - b.width - 10;
+  y = Math.min(Math.max(12, y), innerHeight - b.height - 12);
+  bubble.style.left = Math.max(12, x) + "px"; bubble.style.top = y + "px";
+}
+function hideBubble(force) {
+  if (openComment && !force) return;
+  if (bubbleComment) activate(bubbleComment, false);
+  bubble.hidden = true; openComment = null; bubbleComment = null;
+}
+bubble.addEventListener("mouseleave", () => hideBubble(false));
+document.addEventListener("keydown", e => { if (e.key === "Escape") hideBubble(true); });
+
+let edges = [], leaders = [];
+function build() {
+  hideBubble(true);
+  world.replaceChildren();
+  edges = []; leaders = [];
+  document.documentElement.lang = lang === "ja" ? "ja" : "en";
+  document.title = t(D.title);
+  document.getElementById("doc-title").textContent = t(D.title);
+  viewport.setAttribute("aria-label", UI[lang].map);
+  for (const b of document.querySelectorAll("#lang-seg button")) b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
+  // Off shows key paths only; on adds the other paths.
+  document.querySelector("#view-btn .label").textContent = UI[lang].view;
+  const pathsBtn = document.getElementById("paths-toggle");
+  pathsBtn.querySelector(".label").textContent = UI[lang].all; pathsBtn.setAttribute("aria-checked", String(mode === "all"));
+  document.getElementById("fit").textContent = UI[lang].fit;
+  document.getElementById("legend").innerHTML = "";
+  const lg = document.getElementById("legend");
+  for (const [cls, label] of [["", UI[lang].keyLegend], ["other", UI[lang].otherLegend]]) { const s = el("span"); const i = el("i", cls); s.append(i, label); lg.append(s); }
+  for (const [cls, label] of [["", UI[lang].action], ["note", UI[lang].note]]) { const s = el("span"); const b = el("b", cls, "1"); s.append(b, label); lg.append(s); }
+  world.className = "mode-" + mode;
+  const idsBtn = document.getElementById("ids-toggle");
+  document.querySelector("#edit-toggle .label").textContent = UI[lang].edit;
+  document.body.dataset.edit = editMode ? "on" : "off";
+  updateChangesButton();
+  renderEditHint();
+  idsBtn.querySelector(".label").textContent = UI[lang].ids; idsBtn.setAttribute("aria-checked", String(showIds)); document.body.dataset.ids = showIds ? "on" : "off";
+
+  for (const band of D.bands || []) {
+    const ids = band.screens.map(id => byId[id]);
+    const x0 = Math.min(...ids.map(s => s.x)) - 120, y0 = Math.min(...ids.map(s => s.y)) - 700;
+    const x1 = Math.max(...ids.map(s => s.x + W + GAP + CW)) + 120, y1 = Math.max(...ids.map(s => s.y + H)) + 160;
+    const b = el("div", "band"); Object.assign(b.style, { left: x0 + "px", top: y0 + "px", width: (x1 - x0) + "px", height: (y1 - y0) + "px" });
+    b.append(el("div", "band-label", t(band.title)));
+    world.append(b);
+  }
+
+  const edgeLayer = sv("svg", { class: "layer" });
+  const leaderLayer = sv("svg", { class: "layer leaders" });
+  const screenNodes = {}, commentNodes = {};
+  for (const s of screens) {
+    const node = el("div", "screen"); node.dataset.id = s.id;
+    Object.assign(node.style, { left: s.x + "px", top: s.y + "px", width: W + "px", height: H + "px" });
+    const img = el("img"); img.src = D.images[s.id]; img.alt = t(s.title); img.draggable = false;
+    const title = el("div", "screen-title");
+    const copy = el("button", "copy"); copy.type = "button"; copy.title = UI[lang].copy; copy.setAttribute("aria-label", UI[lang].copy);
+    copy.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>';
+    copy.addEventListener("click", e => { e.stopPropagation(); copyText(lang === "ja" ? `${s.id}「${t(s.title)}」` : `${s.id} "${t(s.title)}"`, copy); });
+    title.append(el("span", "sid", s.id), el("span", "name", t(s.title)), copy);
+    node.append(img, title);
+    const box = el("div", "comments"); box.dataset.id = s.id;
+    Object.assign(box.style, { left: (s.x + W + GAP) + "px", top: s.y + "px", width: CW + "px" });
+    for (const c of commentsFor(s)) {
+      c.screen = s;
+      if (c.anchor) {
+        // The pin sits off the control's top-right corner, or top-left near the right edge.
+        const flip = c.anchor.x + c.anchor.w > W - 80;
+        const pin = el("button", "pin" + (c.kind !== "action" ? " " + c.kind : "") + (flip ? " flip" : "") + (edits.del[c.key] ? " deleted" : ""), String(c.num));
+        pin.type = "button";
+        pin.setAttribute("aria-label", `${c.num}. ${shown(c, c.kind === "action" ? "trigger" : "text")}`);
+        pin.style.left = (flip ? c.anchor.x : c.anchor.x + c.anchor.w) + "px"; pin.style.top = c.anchor.y + "px";
+        pin.addEventListener("mouseenter", () => { activate(c, true); showBubble(c, false); });
+        pin.addEventListener("mouseleave", () => { if (openComment !== c) { activate(c, false); hideBubble(); } });
+        pin.addEventListener("focus", () => { activate(c, true); showBubble(c, false); });
+        pin.addEventListener("blur", () => { if (openComment !== c) { activate(c, false); hideBubble(); } });
+        pin.addEventListener("click", e => { e.stopPropagation(); showBubble(c, true); });
+        node.append(pin); c.pin = pin;
+        const ring = el("div", "hl-ring" + (c.kind !== "action" ? " " + c.kind : "")); Object.assign(ring.style, { left: (c.anchor.x - 6) + "px", top: (c.anchor.y - 6) + "px", width: (c.anchor.w + 12) + "px", height: (c.anchor.h + 12) + "px" });
+        node.append(ring); c.ring = ring;
+      }
+      const card = el("div", "card " + c.kind + (c.kind === "action" && effKey(c.tr) ? " key" : "") + (edits.del[c.key] ? " deleted" : "") + (isChanged(c) ? " changed" : ""));
+      card.dataset.key = c.key;
+      card.append(el("span", "num", String(c.num)));
+      fillComment(card, c, true);
+      card.append(editBar(c));
+      card.addEventListener("mouseenter", () => activate(c, true));
+      card.addEventListener("mouseleave", () => activate(c, false));
+      box.append(card); c.card = card;
+      if (c.anchor) leaders.push({ s, c });
+    }
+    const req = el("button", "add-request", UI[lang].addRequest); req.type = "button";
+    req.addEventListener("click", () => addPin(s.id, null, "request"));
+    box.append(req);
+    world.append(node); screenNodes[s.id] = node; commentNodes[s.id] = box;
+    node.addEventListener("mouseenter", () => setFocus(s.id));
+    node.addEventListener("mouseleave", () => setFocus(null));
+    box.addEventListener("mouseenter", () => setFocus(s.id));
+    box.addEventListener("mouseleave", () => setFocus(null));
+  }
+  world.append(edgeLayer);
+  for (const id in commentNodes) world.append(commentNodes[id]);
+  world.insertBefore(leaderLayer, edgeLayer);
+
+  // Arrows: every transition between two pages except returns.
+  for (const tr of D.transitions) {
+    if (tr.isReturn || tr.from === tr.to) continue;
+    const a = byId[tr.from], b = byId[tr.to];
+    const etr = { ...tr, key: effKey(tr) };
+    const g = sv("g", { class: "edge " + (etr.key ? "key" : "other") }); g.dataset.tid = tr.id; g.dataset.from = tr.from; g.dataset.to = tr.to;
+    const line = sv("path", { class: "line" }), head = sv("path", { class: "head" }), start = sv("circle", { class: "start" });
+    g.append(line, head, start); edgeLayer.append(g);
+    const sx = a.x + (tr.anchor ? tr.anchor.x + tr.anchor.w / 2 : W), sy = a.y + (tr.anchor ? tr.anchor.y + tr.anchor.h / 2 : H / 2);
+    const ex = b.x, ey = b.y + H / 2;
+    edges.push({ tr: etr, g, line, head, start, sx, sy, ex, ey });
+  }
+  requestAnimationFrame(() => {
+    for (const L of leaders) {
+      const card = L.c.card, box = card.parentElement;
+      const x1 = L.s.x + L.c.anchor.x + L.c.anchor.w / 2, y1 = L.s.y + L.c.anchor.y + L.c.anchor.h / 2;
+      const x2 = parseFloat(box.style.left), y2 = parseFloat(box.style.top) + card.offsetTop + 42;
+      const ln = sv("line", { x1, y1, x2, y2 }); leaderLayer.append(ln); L.line = ln; L.c.leader = ln;
+    }
+    drawMinimap();
+    restyle();
+  });
+}
+
+function litEdge(tid, on) { for (const e of edges) if (e.tr.id === tid) e.g.classList.toggle("lit", on || (focusId && (e.tr.from === focusId || e.tr.to === focusId))); }
+function setFocus(id) {
+  if (dragging) return;
+  focusId = id;
+  world.classList.toggle("has-focus", !!id);
+  const related = new Set(id ? [id] : []);
+  for (const e of edges) {
+    const on = !!id && (e.tr.from === id || e.tr.to === id);
+    e.g.classList.toggle("lit", on);
+    if (on) { related.add(e.tr.from); related.add(e.tr.to); }
+  }
+  for (const n of world.querySelectorAll(".screen, .comments")) n.classList.toggle("lit", related.has(n.dataset.id));
+}
+
+// Stroke widths, pins and arrowheads keep a constant on-screen size.
+function restyle() {
+  const inv = 1 / scale;
+  world.style.setProperty("--inv", inv);
+  world.style.setProperty("--side", (GAP + CW) + "px");
+  world.style.setProperty("--pin-size", Math.min(160, Math.max(34, 24 * inv)) + "px");
+  world.dataset.lod = scale < 0.2 ? "far" : "near";
+  for (const e of edges) {
+    const w = (e.tr.key ? 3 : 2) * inv, head = (e.tr.key ? 11 : 9) * inv;
+    let d;
+    if (e.ex > e.sx + 200) {
+      const dx = Math.max(200, (e.ex - e.sx) * 0.5);
+      d = `M${e.sx},${e.sy} C${e.sx + dx},${e.sy} ${e.ex - dx - head},${e.ey} ${e.ex - head},${e.ey}`;
+    } else {
+      const loop = 500 + Math.abs(e.ey - e.sy) * 0.15;
+      d = `M${e.sx},${e.sy} C${e.sx - loop},${e.sy} ${e.ex - loop},${e.ey} ${e.ex - head},${e.ey}`;
+    }
+    e.line.setAttribute("d", d); e.line.setAttribute("stroke-width", w);
+    e.line.setAttribute("stroke-dasharray", e.tr.key ? "" : `${8 * inv} ${6 * inv}`);
+    e.head.setAttribute("d", `M${e.ex},${e.ey} L${e.ex - head * 1.6},${e.ey - head} L${e.ex - head * 1.6},${e.ey + head} Z`);
+    e.start.setAttribute("cx", e.sx); e.start.setAttribute("cy", e.sy); e.start.setAttribute("r", 5 * inv); e.start.setAttribute("stroke-width", 2.5 * inv);
+  }
+  for (const L of leaders) if (L.line) L.line.setAttribute("stroke-width", 2 * inv);
+  document.getElementById("pct").textContent = Math.round(scale * 100) + "%";
+}
+
+function apply(animate) {
+  world.classList.toggle("animate", !!animate);
+  world.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
+  restyle();
+  updateMinimap();
+  // A bubble follows its pin; an unpinned one simply closes when the canvas moves.
+  if (openComment) requestAnimationFrame(() => openComment && showBubble(openComment, true)); else hideBubble(true);
+}
+function bounds(ids) {
+  const list = ids ? ids.map(id => byId[id]) : screens;
+  return { x0: Math.min(...list.map(s => s.x)) - 200, y0: Math.min(...list.map(s => s.y)) - (ids ? 400 : 800),
+           x1: Math.max(...list.map(s => s.x + W + GAP + CW)) + 200, y1: Math.max(...list.map(s => s.y + H)) + 200 };
+}
+function fitTo(b, animate) {
+  const vw = innerWidth, vh = innerHeight - 140;
+  scale = Math.min(vw / (b.x1 - b.x0), vh / (b.y1 - b.y0), 1.5);
+  tx = (vw - (b.x1 - b.x0) * scale) / 2 - b.x0 * scale; ty = 70 + (vh - (b.y1 - b.y0) * scale) / 2 - b.y0 * scale;
+  apply(animate);
+}
+// Minimap: bands and screens in miniature, with the visible area outlined.
+const minimap = document.getElementById("minimap"), MM_W = 150;
+let mm = null;
+function drawMinimap() {
+  const b = bounds(); const k = MM_W / (b.x1 - b.x0), h = Math.min(190, (b.y1 - b.y0) * k);
+  const kk = Math.min(k, h / (b.y1 - b.y0));
+  const svg = sv("svg", { width: MM_W, height: h, viewBox: `${b.x0} ${b.y0} ${b.x1 - b.x0} ${b.y1 - b.y0}` });
+  for (const band of world.querySelectorAll(".band")) svg.append(sv("rect", { class: "m-band", x: band.offsetLeft, y: band.offsetTop, width: band.offsetWidth, height: band.offsetHeight, rx: 60 }));
+  for (const s of screens) svg.append(sv("rect", { class: "m-screen", x: s.x, y: s.y, width: W, height: H, rx: 30 }));
+  const view = sv("rect", { class: "m-view", "vector-effect": "non-scaling-stroke", "stroke-width": 1.5 });
+  svg.append(view);
+  minimap.replaceChildren(svg);
+  mm = { b, view, k: kk, svg };
+  updateMinimap();
+}
+function updateMinimap() {
+  if (!mm) return;
+  mm.view.setAttribute("x", -tx / scale); mm.view.setAttribute("y", -ty / scale);
+  mm.view.setAttribute("width", innerWidth / scale); mm.view.setAttribute("height", innerHeight / scale);
+}
+function minimapJump(e) {
+  const r = mm.svg.getBoundingClientRect();
+  const wx = mm.b.x0 + (e.clientX - r.left) / r.width * (mm.b.x1 - mm.b.x0);
+  const wy = mm.b.y0 + (e.clientY - r.top) / r.height * (mm.b.y1 - mm.b.y0);
+  tx = innerWidth / 2 - wx * scale; ty = innerHeight / 2 - wy * scale; apply(false);
+}
+let mmDrag = false;
+minimap.addEventListener("pointerdown", e => { mmDrag = true; minimap.setPointerCapture(e.pointerId); minimapJump(e); });
+minimap.addEventListener("pointermove", e => { if (mmDrag) minimapJump(e); });
+minimap.addEventListener("pointerup", () => { mmDrag = false; });
+
+function flyTo(id) { if (!byId[id]) return; fitTo(bounds([id]), true); history.replaceState(null, "", "#" + id); }
+function zoomAt(f, cx, cy, animate) {
+  const ns = Math.min(3, Math.max(0.02, scale * f));
+  tx = cx - (cx - tx) * ns / scale; ty = cy - (cy - ty) * ns / scale; scale = ns; apply(animate);
+}
+
+let dragging = false, dragMoved = false, last = null;
+viewport.addEventListener("pointerdown", e => {
+  if (e.target.closest("button, .card, .pin")) return;
+  dragging = true; dragMoved = false; last = { x: e.clientX, y: e.clientY };
+  viewport.setPointerCapture(e.pointerId); viewport.classList.add("dragging");
+});
+viewport.addEventListener("pointermove", e => {
+  if (!dragging) return;
+  const dx = e.clientX - last.x, dy = e.clientY - last.y;
+  if (Math.abs(dx) + Math.abs(dy) > 3) dragMoved = true;
+  tx += dx; ty += dy; last = { x: e.clientX, y: e.clientY }; apply(false);
+});
+const endDrag = e => {
+  if (!dragging) return;
+  dragging = false; viewport.classList.remove("dragging");
+  if (!dragMoved) {
+    hideBubble(true);
+    const s = document.elementsFromPoint(e.clientX, e.clientY).find(n => n.classList?.contains("screen"));
+    if (!s) return;
+    if (!editMode) { flyTo(s.dataset.id); return; }
+    const r = s.getBoundingClientRect(), x = (e.clientX - r.left) / scale, y = (e.clientY - r.top) / scale;
+    addPin(s.dataset.id, { x: Math.round(x - 12), y: Math.round(y - 12), w: 24, h: 24 }, "note");
+  }
+};
+viewport.addEventListener("pointerup", endDrag);
+// The canvas moves only by transform; undo any scroll a focused field or caret causes.
+viewport.addEventListener("scroll", () => { if (viewport.scrollTop || viewport.scrollLeft) { viewport.scrollTop = 0; viewport.scrollLeft = 0; } });
+viewport.addEventListener("pointercancel", () => { dragging = false; viewport.classList.remove("dragging"); });
+viewport.addEventListener("wheel", e => {
+  e.preventDefault();
+  if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY, false);
+  else { tx -= e.deltaX; ty -= e.deltaY; apply(false); }
+}, { passive: false });
+viewport.addEventListener("keydown", e => {
+  if (e.target.isContentEditable || e.target.closest("input, textarea")) return;
+  const step = 120;
+  const keys = { "+": () => zoomAt(1.25, innerWidth / 2, innerHeight / 2, true), "=": () => zoomAt(1.25, innerWidth / 2, innerHeight / 2, true),
+    "-": () => zoomAt(0.8, innerWidth / 2, innerHeight / 2, true), "0": () => fitTo(bounds(), true),
+    ArrowLeft: () => { tx += step; apply(true); }, ArrowRight: () => { tx -= step; apply(true); },
+    ArrowUp: () => { ty += step; apply(true); }, ArrowDown: () => { ty -= step; apply(true); } };
+  if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
+});
+document.getElementById("zoom-in").onclick = () => zoomAt(1.25, innerWidth / 2, innerHeight / 2, true);
+document.getElementById("zoom-out").onclick = () => zoomAt(0.8, innerWidth / 2, innerHeight / 2, true);
+document.getElementById("fit").onclick = () => { history.replaceState(null, "", location.pathname); fitTo(bounds(), true); };
+for (const b of document.querySelectorAll("#lang-seg button")) b.onclick = () => { lang = b.dataset.lang; store.set("flow-lang", lang); build(); apply(false); };
+document.getElementById("ids-toggle").onclick = e => {
+  showIds = !showIds; store.set("flow-ids", showIds ? "on" : "off");
+  e.currentTarget.setAttribute("aria-checked", String(showIds)); document.body.dataset.ids = showIds ? "on" : "off";
+};
+document.getElementById("edit-toggle").onclick = e => {
+  editMode = !editMode; e.currentTarget.setAttribute("aria-checked", String(editMode));
+  document.body.dataset.edit = editMode ? "on" : "off";
+  renderEditHint();
+  updateChangesButton();
+  for (const d of world.querySelectorAll(".card [data-field]")) d.contentEditable = editMode ? "plaintext-only" : "false";
+};
+const changesBtn = document.getElementById("changes-btn"), changesPanel = document.getElementById("changes");
+changesBtn.onclick = () => { changesPanel.hidden = !changesPanel.hidden; changesBtn.setAttribute("aria-expanded", String(!changesPanel.hidden)); if (!changesPanel.hidden) renderChanges(); };
+
+// Every pending change, with a line for people, a record for the agent and an undo.
+function collectChanges() {
+  const out = [];
+  const info = {};
+  for (const s of screens) for (const c of commentsFor(s)) info[c.key] = { s, c };
+  const target = c => c.kind === "action" ? { transition: c.tr.id } : { note: c.index };
+  const otherLang = l => l === "en" ? "ja" : "en";
+  for (const [k, after] of Object.entries(edits.text)) {
+    const [ckey, field, l] = k.split("|"); const hit = info[ckey]; if (!hit) continue;
+    const before = original(hit.c, field)[l] ?? "";
+    const otherDone = `${ckey}|${field}|${otherLang(l)}` in edits.text;
+    out.push({ s: hit.s, line: `#${hit.c.num} ${field} (${l}) ${UI[lang].edited}: "${before}" → "${after}"`, hint: otherDone ? "" : UI[lang][l === "en" ? "needsTr" : "needsTrJa"],
+      record: { op: "editText", screen: hit.s.id, comment: hit.c.num, ...target(hit.c), field, lang: l, before, after, otherLanguageNeedsUpdate: !otherDone },
+      undo: () => delete edits.text[k] });
+  }
+  for (const ckey of Object.keys(edits.del)) {
+    const hit = info[ckey]; if (!hit) continue;
+    const text = shown(hit.c, hit.c.kind === "action" ? "trigger" : "text");
+    out.push({ s: hit.s, line: `#${hit.c.num} ${UI[lang].deletedL}: "${text}"`, record: { op: "delete", screen: hit.s.id, comment: hit.c.num, ...target(hit.c), text }, undo: () => delete edits.del[ckey] });
+  }
+  for (const [tid, on] of Object.entries(edits.key)) {
+    const tr = D.transitions.find(x => x.id === tid); if (!tr) continue;
+    const num = info["tr:" + tid]?.c.num;
+    out.push({ s: byId[tr.from], line: `#${num} ${on ? UI[lang].keyOn : UI[lang].keyOff}`, record: { op: "setKeyPath", transition: tid, key: on }, undo: () => delete edits.key[tid] });
+  }
+  for (const a of edits.adds) {
+    const hit = info["add:" + a.id]; if (!hit) continue;
+    const where = a.anchor ? `@ (${a.anchor.x + a.anchor.w / 2}, ${a.anchor.y + a.anchor.h / 2})` : `(${UI[lang].page})`;
+    out.push({ s: hit.s, line: `#${hit.c.num} ${a.kind === "request" ? UI[lang].newRequest : UI[lang].newNote} ${where}: "${a.text}"`,
+      record: { op: a.kind === "request" ? "addRequest" : "addNote", screen: a.screen, comment: hit.c.num, anchor: a.anchor, lang: a.lang, text: a.text },
+      undo: () => { edits.adds = edits.adds.filter(x => x !== a); } });
+  }
+  return out;
+}
+const editHint = document.getElementById("edit-hint");
+function renderEditHint() {
+  const dismissed = store.get("flow-edit-hint") === "hidden";
+  editHint.hidden = !editMode || dismissed;
+  if (editHint.hidden) return;
+  const text = el("div"); text.append(el("strong", "", UI[lang].hintTitle));
+  const ol = el("ol"); for (const step of UI[lang].hintSteps) ol.append(el("li", "", step)); text.append(ol);
+  const close = el("button", "", "×"); close.type = "button"; close.title = UI[lang].hideHint; close.setAttribute("aria-label", UI[lang].hideHint);
+  close.onclick = () => { store.set("flow-edit-hint", "hidden"); renderEditHint(); };
+  editHint.replaceChildren(text, close);
+}
+function updateChangesButton() {
+  const n = collectChanges().length;
+  changesBtn.hidden = n === 0 && !editMode;
+  changesBtn.textContent = `${UI[lang].changes} (${n})`;
+}
+function screenLabel(s) { return lang === "ja" ? `${s.id}「${t(s.title)}」` : `${s.id} "${t(s.title)}"`; }
+function changesText(list) {
+  const head = `Flow map changes: ${t(D.title)} (${D.schemaVersion || "flow-1"}, ${list.length})\n` +
+    "Apply the edits, deletions and key-path changes to flow-spec.json, translate where marked, then re-render. " +
+    "For requests, check the prototype first and add or recapture screens as needed.\n";
+  const groups = new Map();
+  for (const c of list) { if (!groups.has(c.s.id)) groups.set(c.s.id, []); groups.get(c.s.id).push(c); }
+  let body = "";
+  for (const [id, items] of groups) body += `\n${screenLabel(byId[id])}\n` + items.map(c => `- ${c.line}${c.hint ? ` (${c.hint})` : ""}`).join("\n") + "\n";
+  return head + body + "\n```json\n" + JSON.stringify({ changes: list.map(c => c.record) }, null, 2) + "\n```\n";
+}
+let clearArmed = false;
+function renderChanges() {
+  const list = collectChanges();
+  const header = el("header"); header.append(el("strong", "", `${UI[lang].changes} (${list.length})`));
+  const close = el("button", "tool", "×"); close.type = "button"; close.setAttribute("aria-label", "Close");
+  close.onclick = () => { changesPanel.hidden = true; changesBtn.setAttribute("aria-expanded", "false"); };
+  header.append(close);
+  const howto = el("div", "howto"); howto.append(el("strong", "", UI[lang].howtoTitle));
+  const steps = el("ol"); for (const step of UI[lang].howtoSteps) steps.append(el("li", "", step)); howto.append(steps);
+  const body = el("div", "list");
+  if (!list.length) body.append(el("div", "empty", UI[lang].empty));
+  const groups = new Map();
+  for (const c of list) { if (!groups.has(c.s.id)) groups.set(c.s.id, []); groups.get(c.s.id).push(c); }
+  for (const [id, items] of groups) {
+    const g = el("div"); const title = el("div", "group-title", t(byId[id].title)); g.append(title);
+    for (const c of items) {
+      const row = el("div", "item"); const text = el("span", "", c.line);
+      if (c.hint) text.append(el("span", "hint", ` · ${c.hint}`));
+      const undo = el("button", "", UI[lang].undo); undo.type = "button";
+      undo.onclick = () => { c.undo(); saveEdits(); rebuild(); };
+      row.append(text, undo); g.append(row);
+    }
+    body.append(g);
+  }
+  const footer = el("footer");
+  const clear = el("button", "", UI[lang].clear); clear.type = "button"; clear.disabled = !list.length;
+  clear.onclick = () => {
+    if (!clearArmed) { clearArmed = true; clear.textContent = UI[lang].clearConfirm; setTimeout(() => { clearArmed = false; clear.textContent = UI[lang].clear; }, 3000); return; }
+    clearArmed = false; edits = { text: {}, del: {}, key: {}, adds: [] }; saveEdits(); rebuild();
+  };
+  const copy = el("button", "primary"); copy.type = "button"; copy.disabled = !list.length;
+  copy.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>';
+  copy.append(UI[lang].copyChanges);
+  copy.onclick = () => copyText(changesText(list), copy, UI[lang].copiedChanges);
+  footer.append(clear, copy);
+  changesPanel.replaceChildren(header, howto, body, footer);
+}
+
+function copyText(text, btn, message) {
+  const done = () => {
+    btn.classList.add("done"); setTimeout(() => btn.classList.remove("done"), 1200);
+    const toast = document.getElementById("toast"); toast.textContent = message || `${UI[lang].copied}: ${text}`; toast.hidden = false;
+    clearTimeout(copyText.timer); copyText.timer = setTimeout(() => { toast.hidden = true; }, 1600);
+  };
+  const fallback = () => {
+    const area = el("textarea"); area.value = text; area.style.position = "fixed"; area.style.opacity = "0";
+    document.body.append(area); area.select();
+    try { document.execCommand("copy"); done(); } catch (err) {} area.remove();
+  };
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+}
+const viewBtn = document.getElementById("view-btn"), viewMenu = document.getElementById("view-menu");
+const setViewMenu = open => { viewMenu.hidden = !open; viewBtn.setAttribute("aria-expanded", String(open)); };
+viewBtn.onclick = () => setViewMenu(viewMenu.hidden);
+document.addEventListener("pointerdown", e => { if (!viewMenu.hidden && !e.target.closest("#top")) setViewMenu(false); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !viewMenu.hidden) { setViewMenu(false); viewBtn.focus(); } });
+document.getElementById("paths-toggle").onclick = e => {
+  mode = mode === "all" ? "key" : "all"; store.set("flow-mode", mode);
+  world.className = "mode-" + mode; e.currentTarget.setAttribute("aria-checked", String(mode === "all"));
+};
+addEventListener("resize", () => apply(false));
+
+build();
+const start = decodeURIComponent(location.hash.slice(1));
+if (byId[start]) fitTo(bounds([start]), false); else fitTo(bounds(), false);
+</script>
+</body>
+</html>
