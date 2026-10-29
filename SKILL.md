@@ -1,12 +1,12 @@
 ---
-name: frontend-to-flow
-description: Turn a running frontend or prototype into a bilingual (English / Japanese) flow map, a pannable canvas of real screen captures with key-path arrows between them and numbered, Figma-style comments pinned to the controls they describe. Readers can edit the map in the page and copy their changes for an AI agent to apply. Use when someone wants to explain how a prototype flows to people who will not run it, for design handoff, reviews or stakeholder walkthroughs, or when a pasted "Flow map changes" list needs applying. Not for redesigning the product or for claiming a backend exists.
+name: wireflow
+description: Turn a running frontend or prototype into a bilingual (English / Japanese) wireflow, a pannable canvas of real screen captures with key-path arrows between them and numbered, Figma-style comments pinned to the controls they describe. Readers can edit the map in the page and copy their changes for an AI agent to apply. Use when someone wants to explain how a prototype flows to people who will not run it, for design handoff, reviews or stakeholder walkthroughs, or when a pasted "Flow map changes" list needs applying. Not for redesigning the product or for claiming a backend exists.
 metadata:
-  version: "1.1"
+  version: "1.2"
   inspired-by: "frontend-to-ue (BadbotAI/BadGoods); the renderer and template here are rewritten"
 ---
 
-# Frontend to flow map
+# Wireflow
 
 The output is one self-contained HTML file that opens offline in any browser. It works with any coding agent that can drive a browser, run Python and read this file. It shows:
 
