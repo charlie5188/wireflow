@@ -207,12 +207,18 @@ svg.layer { position: absolute; left: 0; top: 0; overflow: visible; pointer-even
   background: var(--ui); border: 1px solid var(--ui-line); border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
 #top { left: max(16px, env(safe-area-inset-left, 0px)); top: 16px; max-width: calc(100vw - 32px); }
 #actions { right: max(16px, env(safe-area-inset-right, 0px)); top: 16px; }
-#view-menu { position: absolute; left: 0; top: calc(100% + 6px); min-width: 240px; display: flex; flex-direction: column; align-items: stretch; gap: 6px;
-  padding: 10px; background: var(--ui); border: 1px solid var(--ui-line); border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.14); }
+#view-menu { position: absolute; left: 0; top: calc(100% + 6px); min-width: 248px; display: flex; flex-direction: column; align-items: stretch; gap: 2px;
+  padding: 6px; background: var(--ui); border: 1px solid var(--ui-line); border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.14); }
 #view-menu[hidden] { display: none; }
-#view-menu .seg { align-self: flex-start; }
-#view-menu .toggle { justify-content: flex-start; }
-#view-menu .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; padding: 8px 6px 2px; border-top: 1px solid var(--ui-line); margin-top: 4px; }
+/* Laid out as a menu: every row has its name on the left and its control or shortcut on the right,
+ * in one column. Dividers split the settings, the Figma view and the legend. */
+#view-menu .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 34px; padding: 0 8px; border-radius: 7px; }
+#view-menu .toggle .track { order: 1; }
+#view-menu .seg button { padding: 3px 10px; font-size: 12px; }
+#view-menu .menu-sep { height: 1px; background: var(--ui-line); margin: 4px 2px; }
+#view-menu kbd { font: inherit; font-size: 12px; color: var(--muted); }
+#view-menu .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; padding: 6px 8px 4px; }
+#view-menu .legend span { white-space: nowrap; }
 #view-btn[aria-expanded="true"] { background: var(--chip); }
 .toolbar h1 { margin: 0 8px; font-size: 15px; font-weight: 700; white-space: nowrap; }
 .seg { display: inline-flex; background: var(--bg); border-radius: 9px; padding: 2px; }
@@ -231,6 +237,13 @@ svg.layer { position: absolute; left: 0; top: 0; overflow: visible; pointer-even
   background: var(--pin); color: #fff; font-size: 10px; margin-right: 4px; vertical-align: middle; }
 .legend b.note { background: var(--note); }
 
+/* Figma view (?figma): the whole map at 100 % as one plain page that scrolls. Titles must not
+ * clip, because Figma swaps the system font for a slightly wider one. */
+html[data-figma="on"], html[data-figma="on"] body { height: auto; overflow: visible; }
+html[data-figma="on"] #viewport { position: relative; inset: auto; cursor: auto; pointer-events: none; }
+html[data-figma="on"] :is(#top, #actions, #navigator, #bubble, #toast, .copy) { display: none; }
+html[data-figma="on"] :is(.screen-title, .screen-title .name) { overflow: visible; text-overflow: clip; }
+
 </style>
 </head>
 <body>
@@ -240,12 +253,18 @@ svg.layer { position: absolute; left: 0; top: 0; overflow: visible; pointer-even
   <div class="sep"></div>
   <button type="button" class="tool" id="view-btn" aria-expanded="false" aria-controls="view-menu"><span class="label"></span> <span aria-hidden="true">▾</span></button>
   <div id="view-menu" hidden>
-    <div class="seg" role="group" id="lang-seg">
-      <button type="button" data-lang="en">EN</button>
-      <button type="button" data-lang="ja">日本語</button>
+    <div class="row">
+      <span id="lang-label"></span>
+      <div class="seg" role="group" id="lang-seg" aria-labelledby="lang-label">
+        <button type="button" data-lang="en">EN</button>
+        <button type="button" data-lang="ja">日本語</button>
+      </div>
     </div>
-    <button type="button" class="tool toggle" id="paths-toggle" role="switch" aria-checked="false"><span class="track" aria-hidden="true"></span><span class="label"></span></button>
-    <button type="button" class="tool toggle" id="ids-toggle" role="switch" aria-checked="false"><span class="track" aria-hidden="true"></span><span class="label"></span></button>
+    <button type="button" class="tool toggle row" id="paths-toggle" role="switch" aria-checked="false"><span class="track" aria-hidden="true"></span><span class="label"></span></button>
+    <button type="button" class="tool toggle row" id="ids-toggle" role="switch" aria-checked="false"><span class="track" aria-hidden="true"></span><span class="label"></span></button>
+    <div class="menu-sep" role="separator"></div>
+    <button type="button" class="tool row" id="figma-btn"><span class="label"></span><kbd></kbd></button>
+    <div class="menu-sep" role="separator"></div>
     <div class="legend" id="legend"></div>
   </div>
 </div>
@@ -273,13 +292,13 @@ svg.layer { position: absolute; left: 0; top: 0; overflow: visible; pointer-even
 <script>
 const D = __PAYLOAD__;
 const UI = {
-  en: { key: "Key paths", all: "All paths", fit: "Fit all", ids: "Page IDs", view: "View", copy: "Copy page name", copied: "Copied", edit: "Edit mode", changes: "Changes", copyChanges: "Copy for AI agent", clear: "Clear all", clearConfirm: "Click again to clear", undo: "Undo", del: "Delete", restore: "Restore", keyPath: "Key path", noteKind: "Add note", requestKind: "Ask AI agent", noteKindTip: "Adds this text to the map as a note, as written.", requestKindTip: "Not added as text. The AI agent checks the prototype and updates this map. It does not change the product.", notePh: "Write a note…", requestPh: "What should the AI agent check or update on this map?", addRequest: "+ Ask the AI agent about this page", needsTr: "Japanese needs updating", needsTrJa: "English needs updating", edited: "edited", deletedL: "delete", keyOn: "make key path", keyOff: "remove key path", newNote: "new note", newRequest: "ask AI agent", page: "page", copiedChanges: "Copied. Paste it to your AI agent (for example Claude Code or Codex).",
+  en: { key: "Key paths", all: "All paths", fit: "Fit all", ids: "Page IDs", view: "View", language: "Language", figma: "Figma view", figmaTip: "The whole map at 100 %, to import into Figma. Esc returns.", copy: "Copy page name", copied: "Copied", edit: "Edit mode", changes: "Changes", copyChanges: "Copy for AI agent", clear: "Clear all", clearConfirm: "Click again to clear", undo: "Undo", del: "Delete", restore: "Restore", keyPath: "Key path", noteKind: "Add note", requestKind: "Ask AI agent", noteKindTip: "Adds this text to the map as a note, as written.", requestKindTip: "Not added as text. The AI agent checks the prototype and updates this map. It does not change the product.", notePh: "Write a note…", requestPh: "What should the AI agent check or update on this map?", addRequest: "+ Ask the AI agent about this page", needsTr: "Japanese needs updating", needsTrJa: "English needs updating", edited: "edited", deletedL: "delete", keyOn: "make key path", keyOff: "remove key path", newNote: "new note", newRequest: "ask AI agent", page: "page", copiedChanges: "Copied. Paste it to your AI agent (for example Claude Code or Codex).",
         tips: ["Click comment text to edit it.", "Click a screen to add a pin."], tipsNote: "Changes are saved in this browser only. Copy them here for your AI agent when you're done.",
         summary: (n, p) => `${n} ${n === 1 ? "change" : "changes"} on ${p} ${p === 1 ? "page" : "pages"}`, colon: ": ",
         sEdited: "Edited", sDeleted: "Deleted", sKeyOn: "Key path on", sKeyOff: "Key path off", sNote: "New note", sRequest: "Ask AI agent",
         keyLegend: "Key path", otherLegend: "Other path",
         action: "Interaction", note: "Note", back: "Returns to", go: "Go to", map: "Flow map. Drag to pan, Ctrl or ⌘ + scroll to zoom, 0 to fit." },
-  ja: { key: "主要フロー", all: "すべてのフロー", fit: "全体表示", ids: "ページ ID", view: "表示", copy: "ページ名をコピー", copied: "コピーしました", edit: "編集モード", changes: "変更", copyChanges: "AI エージェント用にコピー", clear: "すべて取り消す", clearConfirm: "もう一度クリックで取り消し", undo: "元に戻す", del: "削除", restore: "元に戻す", keyPath: "主要フロー", noteKind: "補足を追加", requestKind: "AI エージェントに依頼", noteKindTip: "書いたとおりに補足としてマップに追加されます。", requestKindTip: "文言としては追加されません。AI エージェントがプロトタイプを確認してこのマップを更新します。製品は変更しません。", notePh: "補足を入力…", requestPh: "このマップで AI エージェントに確認・更新してほしいことは？", addRequest: "+ このページについて AI エージェントに依頼", needsTr: "日本語の更新が必要", needsTrJa: "英語の更新が必要", edited: "編集", deletedL: "削除", keyOn: "主要フローにする", keyOff: "主要フローから外す", newNote: "新しい補足", newRequest: "AI エージェントに依頼", page: "ページ", copiedChanges: "コピーしました。AI エージェント（Claude Code や Codex など）に貼り付けてください。",
+  ja: { key: "主要フロー", all: "すべてのフロー", fit: "全体表示", ids: "ページ ID", view: "表示", language: "言語", figma: "Figma 用の表示", figmaTip: "マップ全体を原寸で表示します。Figma への取り込み用です。Esc で戻ります。", copy: "ページ名をコピー", copied: "コピーしました", edit: "編集モード", changes: "変更", copyChanges: "AI エージェント用にコピー", clear: "すべて取り消す", clearConfirm: "もう一度クリックで取り消し", undo: "元に戻す", del: "削除", restore: "元に戻す", keyPath: "主要フロー", noteKind: "補足を追加", requestKind: "AI エージェントに依頼", noteKindTip: "書いたとおりに補足としてマップに追加されます。", requestKindTip: "文言としては追加されません。AI エージェントがプロトタイプを確認してこのマップを更新します。製品は変更しません。", notePh: "補足を入力…", requestPh: "このマップで AI エージェントに確認・更新してほしいことは？", addRequest: "+ このページについて AI エージェントに依頼", needsTr: "日本語の更新が必要", needsTrJa: "英語の更新が必要", edited: "編集", deletedL: "削除", keyOn: "主要フローにする", keyOff: "主要フローから外す", newNote: "新しい補足", newRequest: "AI エージェントに依頼", page: "ページ", copiedChanges: "コピーしました。AI エージェント（Claude Code や Codex など）に貼り付けてください。",
         tips: ["コメントの文言をクリックすると編集できます。", "画面をクリックするとピンを追加できます。"], tipsNote: "変更はこのブラウザにのみ保存されます。終わったら、ここで AI エージェント用にコピーしてください。",
         summary: (n, p) => `${p} ページ・${n} 件の変更`, colon: "：",
         sEdited: "編集", sDeleted: "削除", sKeyOn: "主要フローにする", sKeyOff: "主要フローから外す", sNote: "新しい補足", sRequest: "AI エージェントに依頼",
@@ -293,6 +312,9 @@ const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { ret
                 set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
 let lang = store.get("flow-lang") || D.defaultLang || "en";
 if (!UI[lang]) lang = "en";
+// ?figma opens the Figma view (see the end of the script); ?figma=ja or ?figma=en also sets the language.
+const figma = new URLSearchParams(location.search).get("figma");
+if (UI[figma]) lang = figma;
 let mode = store.get("flow-mode") || "key";
 let showIds = store.get("flow-ids") === "on";
 let scale = 1, tx = 0, ty = 0, focusId = null;
@@ -305,6 +327,8 @@ const sv = (tag, attrs) => { const n = document.createElementNS(SVG, tag); for (
 const EDIT_KEY = "flow-edits:" + (D.title.en || D.title);
 let edits = (() => { try { return JSON.parse(store.get(EDIT_KEY)) || null; } catch (e) { return null; } })() || {};
 edits.text ??= {}; edits.del ??= {}; edits.key ??= {}; edits.adds ??= [];
+// The Figma view shows the map as rendered, without edits pending in this browser.
+if (figma !== null) edits = { text: {}, del: {}, key: {}, adds: [] };
 let editMode = false;
 function saveEdits() { store.set(EDIT_KEY, JSON.stringify(edits)); updateChangesButton(); if (!document.getElementById("changes").hidden) renderChanges(); }
 const effKey = tr => edits.key[tr.id] ?? !!tr.key;
@@ -441,6 +465,7 @@ function build() {
   for (const b of document.querySelectorAll("#lang-seg button")) b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
   // Off shows key paths only; on adds the other paths.
   document.querySelector("#view-btn .label").textContent = UI[lang].view;
+  document.getElementById("lang-label").textContent = UI[lang].language;
   const pathsBtn = document.getElementById("paths-toggle");
   pathsBtn.querySelector(".label").textContent = UI[lang].all; pathsBtn.setAttribute("aria-checked", String(mode === "all"));
   document.getElementById("fit").textContent = UI[lang].fit;
@@ -454,6 +479,8 @@ function build() {
   document.body.dataset.edit = editMode ? "on" : "off";
   updateChangesButton();
   if (!changesPanel.hidden) renderChanges();
+  const figmaBtn = document.getElementById("figma-btn");
+  figmaBtn.querySelector(".label").textContent = UI[lang].figma; figmaBtn.title = UI[lang].figmaTip;
   idsBtn.querySelector(".label").textContent = UI[lang].ids; idsBtn.setAttribute("aria-checked", String(showIds)); document.body.dataset.ids = showIds ? "on" : "off";
 
   for (const band of D.bands || []) {
@@ -843,9 +870,48 @@ document.getElementById("paths-toggle").onclick = e => {
 };
 addEventListener("resize", () => apply(false));
 
+// The Figma view is set up only while the page loads (see below), so switching reloads the page with
+// or without ?figma. ⌘\ (Ctrl+\) goes both ways, like Show/Hide UI in Figma; Esc leaves. Leaving
+// returns to the spot the reader left, not to Fit all.
+const RETURN_KEY = "flow-return";
+function setFigma(on) {
+  if (on) try { sessionStorage.setItem(RETURN_KEY, JSON.stringify({ scale, tx, ty })); } catch (e) {}
+  const u = new URL(location.href); u.search = on ? "?figma" : "";
+  if (on) location.assign(u); else location.replace(u);
+}
+document.querySelector("#figma-btn kbd").textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘\\" : "Ctrl+\\";
+document.getElementById("figma-btn").onclick = () => setFigma(true);
+document.addEventListener("keydown", e => {
+  if (e.target.isContentEditable || e.target.closest?.("input, textarea")) return;
+  // ¥ is the same key on Japanese keyboards.
+  if ((e.metaKey || e.ctrlKey) && (e.key === "\\" || e.key === "¥")) { e.preventDefault(); setFigma(figma === null); }
+  else if (e.key === "Escape" && figma !== null) setFigma(false);
+});
+
+if (figma !== null) {
+  // Nothing may sit above or left of the canvas origin: Figma's import drops text placed there
+  // (the top band's title and the first screen's name went missing).
+  const b = bounds();
+  for (const s of screens) { s.x -= b.x0; s.y -= b.y0; }
+}
 build();
-const start = decodeURIComponent(location.hash.slice(1));
-if (byId[start]) fitTo(bounds([start]), false); else fitTo(bounds(), false);
+if (figma !== null) {
+  // Figma view: the whole map at 100 % with no toolbars and no pointer handling, so a
+  // page-to-design import (such as Figma's browser extension) takes in every screen, arrow, pin
+  // and comment at full size, not only the part a window shows.
+  document.documentElement.dataset.figma = "on";
+  const b = bounds();
+  Object.assign(viewport.style, { width: (b.x1 - b.x0) + "px", height: (b.y1 - b.y0) + "px" });
+  scale = 1; tx = -b.x0; ty = -b.y0; apply(false);
+  // Open on the first screen, not on empty canvas; an import still takes in the whole page.
+  scrollTo(Math.max(0, screens[0].x - b.x0 - 160), Math.max(0, screens[0].y - b.y0 - 200));
+} else {
+  let back = null;
+  try { back = JSON.parse(sessionStorage.getItem(RETURN_KEY)); sessionStorage.removeItem(RETURN_KEY); } catch (e) {}
+  const start = decodeURIComponent(location.hash.slice(1));
+  if (back) { ({ scale, tx, ty } = back); apply(false); }
+  else if (byId[start]) fitTo(bounds([start]), false); else fitTo(bounds(), false);
+}
 </script>
 </body>
 </html>

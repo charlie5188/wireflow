@@ -42,6 +42,14 @@ python3 scripts/render_flow.py examples/kiln-tasks/bundle --out my-wireflow.html
 
 Open [`examples/kiln-tasks/kiln-flow.html`](examples/kiln-tasks/kiln-flow.html) after cloning to try a finished map. See [SKILL.md](SKILL.md) for the procedure, the `flow-spec.json` format and how a pasted change list is applied.
 
+### Bring a map into Figma
+
+Open **View** and choose **Figma view**, or press ⌘\ (Ctrl+\ on Windows). The page then shows the whole map at full size, without toolbars, in the language and View settings you are using. Import that page with Figma's browser extension, then press Esc to go back. The result in Figma is a static copy: hover, the language switch and edit mode work only in the HTML file.
+
+To open the Figma view from a link, add `?figma` to the end of the map's address (`?figma=en` or `?figma=ja` picks the language).
+
+For a map saved on your computer, let the extension read local files first: in Chrome, open the extension's details and turn on **Allow access to file URLs**.
+
 ### Contents
 
 - `SKILL.md`: instructions for the agent.
@@ -91,6 +99,14 @@ python3 scripts/render_flow.py examples/kiln-tasks/bundle --out my-wireflow.html
 ```
 
 完成例はクローン後に [`examples/kiln-tasks/kiln-flow.html`](examples/kiln-tasks/kiln-flow.html) を開いて確認できます。手順、`flow-spec.json` の形式、貼り付けられた変更リストの反映方法は [SKILL.md](SKILL.md) を参照してください。
+
+### Figma に取り込む
+
+「表示」メニューの **Figma 用の表示** を選ぶか、⌘\（日本語キーボードでは ⌘¥、Windows では Ctrl+\）を押します。ツールバーのない、マップ全体を原寸で並べたページになります。言語と「表示」メニューの設定は今のままです。このページを Figma のブラウザ拡張機能で取り込み、Esc で元の表示に戻ります。Figma に入るのは静止したコピーです。ホバー、言語の切り替え、編集モードは HTML ファイルでだけ使えます。
+
+リンクから開く場合は、マップのアドレスの末尾に `?figma` を付けます（言語は `?figma=en` または `?figma=ja` で指定できます）。
+
+パソコンに保存したマップの場合は、先に拡張機能がローカルのファイルを読めるようにしてください。Chrome では拡張機能の「詳細」を開き、**ファイルの URL へのアクセスを許可する** をオンにします。
 
 ### 構成
 

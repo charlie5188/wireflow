@@ -33,7 +33,7 @@ A bundle directory holds `flow-spec.json` and `captures/<ID>.png`.
 4. **Measure anchors.** For every trigger control and every note that points at something, record its bounding box in the capture's own pixels (`{x, y, w, h}`). Only use measured boxes; omit `anchor` when there is nothing to point at. A box measured on one page is wrong on a capture where the list has scrolled or reordered; measure on that capture.
 5. **Write `flow-spec.json`** (format below). Write every user-facing string in both languages. Keep control names exactly as the UI shows them, quoted, in both languages.
 6. **Render** with `render_flow.py`.
-7. **Check in a browser**: fit view, one zoomed screen per band, both languages, the All paths switch, a pin hover and click, a target chip jump, and edit mode with Copy for AI agent. Fix overlaps by changing `grid` positions, not by editing the HTML.
+7. **Check in a browser**: fit view, one zoomed screen per band, both languages, the All paths switch, a pin hover and click, a target chip jump, edit mode with Copy for AI agent, and Figma view. Fix overlaps by changing `grid` positions, not by editing the HTML.
 8. **Privacy**: captures are images, so scan them by eye for real names, emails, customer data and tokens. Replace anything real with demo data before capturing.
 9. **Deliver** the HTML file, or publish it (see Publishing). State the limits listed at the end.
 
@@ -89,13 +89,14 @@ Decide this; do not ask the user screen by screen.
 
 Layout, as in FigJam:
 
-- **Top left**: the map title and a **View** menu with the language (EN / 日本語), the **All paths** switch, the **Page IDs** switch and the legend. Language and switches are remembered per browser.
+- **Top left**: the map title and a **View** menu with the language (EN / 日本語), the **All paths** switch, the **Page IDs** switch, **Figma view** and the legend. Language and switches are remembered per browser.
 - **Top right**: the **Edit mode** switch, and **Changes (n)** once edit mode is on or edits exist.
 - **Bottom right**: one panel with the minimap (click or drag to move) and the zoom controls (−, percentage, +, Fit all).
 
 On the canvas:
 
 - Drag pans; plain scroll pans; Ctrl or ⌘ plus scroll zooms at the pointer; `+`, `-` and `0` (fit all) work from the keyboard. `#SCREEN-ID` in the URL opens on that screen.
+- **Figma view** (in the View menu, or ⌘\ / Ctrl+\) reloads the page as the whole map at 100 % on one plain, scrollable page with no toolbars; Esc or ⌘\ returns to the spot the reader left. `?figma` (or `?figma=ja`, `?figma=en`) opens it directly. It keeps the language, All paths and Page IDs last set in this browser (`=en` or `=ja` picks the language) and leaves out the edits saved in this browser. When someone wants the map in Figma, have them open Figma view and import the page with Figma's browser extension (a local file needs **Allow access to file URLs** turned on for the extension). If you have a tool that imports a web page into Figma, import the `?figma` page, never the normal view: that view shows only what fits in the window, too small to read. Do not rebuild the map in Figma by hand.
 - Clicking a screen zooms to it and its comments. A comment's chip jumps to its target screen.
 - Hovering a screen shows all of its arrows, even with All paths off, and dims the rest.
 - Pins sit just outside the top corner of the control they mark, so the control stays visible. Hovering a pin outlines the control, lights its card, arrow and leader line, and shows the comment in a bubble beside the pin. Clicking a pin keeps the bubble open (Esc or a click on the canvas closes it). Hovering a card lights the same pin, outline and arrow.
