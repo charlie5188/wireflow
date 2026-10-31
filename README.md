@@ -1,14 +1,8 @@
 # wireflow
 
+https://github.com/user-attachments/assets/cb711282-c979-4c08-837a-2dd4cf7f027d
+
 [English](#english) · [日本語](#日本語)
-
-![Overview of a wireflow: screens grouped into bands, with key-path arrows between them](docs/preview-overview.png)
-
-| Comments pinned to controls / 操作箇所に付いたコメント | Edit mode and the change list / 編集モードと変更リスト |
-| --- | --- |
-| ![Hovering a pin outlines the control and shows its comment](docs/preview-comments.png) | ![Edit mode with a new pin and the Changes panel](docs/preview-edit-mode.png) |
-
-The screenshots use **Kiln Tasks**, a fictional app included in [`examples/kiln-tasks`](examples/kiln-tasks). / スクリーンショットはすべて架空のアプリ **Kiln Tasks**（[`examples/kiln-tasks`](examples/kiln-tasks)）のものです。
 
 ---
 
