@@ -3,7 +3,7 @@ name: wireflow
 description: Turn a running frontend or prototype into a bilingual (English / Japanese) wireflow, a pannable canvas of real screen captures with key-path arrows between them and numbered, Figma-style comments pinned to the controls they describe. Readers can edit the map in the page and copy their changes for an AI agent to apply. Use when someone wants to explain how a prototype flows to people who will not run it, for design handoff, reviews or stakeholder walkthroughs, or when a pasted "Flow map changes" list needs applying. Not for redesigning the product or for claiming a backend exists.
 license: MIT
 metadata:
-  version: "1.2"
+  version: "1.3"
   inspired-by: "frontend-to-ue (BadbotAI/BadGoods); the renderer and template here are rewritten"
 ---
 
@@ -106,13 +106,13 @@ On the canvas:
 
 Readers change the map in the page; an AI agent applies the result.
 
-- Turning on **Edit mode** shows a short tips box (dismissible, remembered). Then a reader can:
+- The first time a reader turns on **Edit mode** in a browser, the Changes popover opens once with two short tips. Then a reader can:
   - edit a comment's text in place, in the current language;
   - **Delete** a comment (it stays visible, struck through, until applied; **Restore** undoes it);
   - tick **Key path** on an interaction to make it a key path, or untick it;
   - click anywhere on a screen to drop a new pin, write its text, and choose **Add note** (the text is added to the map) or **Ask AI agent** (the agent checks the prototype and updates the map; it never changes the product);
   - use **+ Ask the AI agent about this page** for a request without a position.
-- **Changes (n)** opens a panel with a three-step how-to, every pending change grouped by page with Undo, **Clear all** (click twice) and **Copy for AI agent**. The copied text is a summary for people followed by a JSON block for the agent. Edits stay in that browser until cleared; they are not shared with other viewers.
+- **Changes (n)** opens one popover under the button. With no changes it shows the tips. With changes it shows a one-line summary ("4 changes on 2 pages"), **Clear all** (click twice) and **Copy for AI agent**. The summary expands to one short line per change, grouped by page in map order, each with Undo. Clicking a page name closes the popover and moves the canvas to that page, where each change is marked on its card. The copied text is a summary for people followed by a JSON block for the agent. Edits stay in that browser until cleared; they are not shared with other viewers.
 
 ## Applying a pasted change list
 

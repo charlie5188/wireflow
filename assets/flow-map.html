@@ -134,32 +134,38 @@ body[data-edit="on"] .screen { cursor: crosshair; }
 .toggle[aria-checked="true"] .track::after { transform: translateX(12px); }
 @media (prefers-reduced-motion: reduce) { .toggle .track, .toggle .track::after { transition: none; } }
 #changes-btn { font-weight: 600; color: var(--key); }
-/* Shown while edit mode is on, until dismissed: what can be done and where it ends up. */
-#edit-hint { position: fixed; z-index: 9; left: 16px; top: 76px; max-width: min(560px, calc(100vw - 32px)); display: flex; gap: 10px; align-items: flex-start;
-  background: var(--ui); border: 1px solid var(--ui-line); border-left: 3px solid var(--key); border-radius: 10px; padding: 10px 12px;
-  box-shadow: 0 4px 18px rgba(0,0,0,.08); font-size: 13px; line-height: 1.5; }
-#edit-hint[hidden] { display: none; }
-#edit-hint ol, #changes .howto ol { margin: 4px 0 0; padding-left: 18px; }
-#edit-hint strong { display: block; }
-#edit-hint button { flex: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; }
-#changes .howto { color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--ui-line); line-height: 1.5; }
-#changes .howto strong { color: var(--ink); }
-#changes { position: fixed; z-index: 15; right: 16px; top: 68px; width: min(440px, calc(100vw - 32px)); max-height: 70vh;
+#changes-btn[aria-expanded="true"] { background: var(--chip); }
+/* One popover under Changes (n), like the View menu. With no changes it holds the few tips a
+ * reader needs; with changes it is a one-line summary (details on demand) and the copy button,
+ * because what readers want from it is the text for their AI agent. */
+#changes { position: absolute; right: 0; top: calc(100% + 6px); width: min(340px, calc(100vw - 32px)); max-height: calc(100vh - 160px);
   display: flex; flex-direction: column; background: var(--ui); border: 1px solid var(--ui-line); border-radius: 12px;
-  box-shadow: 0 8px 28px rgba(0,0,0,.16); font-size: 13px; }
+  box-shadow: 0 8px 28px rgba(0,0,0,.14); font-size: 13px; line-height: 1.45; overflow: hidden; }
 #changes[hidden] { display: none; }
-#changes header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--ui-line); }
-#changes header strong { font-size: 14px; }
-#changes .list { overflow: auto; padding: 8px 14px; display: flex; flex-direction: column; gap: 12px; }
-#changes .group-title { font-weight: 650; }
-#changes .item { display: flex; gap: 8px; align-items: flex-start; padding: 4px 0; }
-#changes .item span { flex: 1; min-width: 0; overflow-wrap: anywhere; color: var(--ink); }
-#changes .item .hint { color: var(--muted); }
-#changes .item button { flex: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; padding: 0 4px; }
-#changes .item button:hover { color: var(--key); }
-#changes .empty { color: var(--muted); padding: 8px 0; }
-#changes footer { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--ui-line); justify-content: flex-end; }
+#changes .tips { margin: 0; padding: 12px 14px 12px 30px; display: flex; flex-direction: column; gap: 4px; }
+#changes .tips .muted { color: var(--muted); list-style: none; margin: 4px 0 0 -16px; }
+#changes .summary { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; color: var(--ink);
+  font: inherit; text-align: left; padding: 10px 14px; cursor: pointer; }
+#changes .summary:hover { background: var(--chip); }
+#changes .summary:focus-visible { outline: 2px solid var(--key); outline-offset: -2px; }
+#changes .summary .chev { display: inline-flex; color: var(--muted); transition: transform 150ms; }
+#changes .summary[aria-expanded="true"] .chev { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { #changes .summary .chev { transition: none; } }
+#changes .list { overflow: auto; padding: 0 14px 8px; }
+#changes .group-title { display: flex; align-items: center; gap: 4px; max-width: 100%; margin: 8px 0 2px; padding: 0; border: 0; background: transparent;
+  font: inherit; font-size: 12px; font-weight: 600; color: var(--ink); cursor: pointer; text-align: left; }
+#changes .group-title .arrow { color: var(--muted); }
+#changes .group-title:hover, #changes .group-title:focus-visible, #changes .group-title:hover .arrow, #changes .group-title:focus-visible .arrow { color: var(--key); outline: none; }
+#changes .group-title:hover { text-decoration: underline; text-underline-offset: 2px; }
+#changes .item { display: flex; gap: 6px; align-items: baseline; padding: 2px 0; }
+#changes .item .n { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+#changes .item .text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#changes .item button { flex: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; font: inherit; padding: 0 2px; }
+#changes .item button:hover, #changes .item button:focus-visible { color: var(--key); }
+#changes footer { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 14px; border-top: 1px solid var(--ui-line); }
 #changes footer button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer; border: 1px solid var(--ui-line); background: var(--ui); color: var(--ink); }
+#changes footer .quiet { border-color: transparent; color: var(--muted); padding-left: 0; padding-right: 0; }
+#changes footer .quiet:hover { color: var(--ink); }
 #changes footer .primary { background: var(--key); border-color: var(--key); color: #fff; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
 
 .comments { position: absolute; display: flex; flex-direction: column; gap: 22px; }
@@ -245,7 +251,8 @@ svg.layer { position: absolute; left: 0; top: 0; overflow: visible; pointer-even
 </div>
 <div class="toolbar" id="actions">
   <button type="button" class="tool toggle" id="edit-toggle" role="switch" aria-checked="false"><span class="track" aria-hidden="true"></span><span class="label"></span></button>
-  <button type="button" class="tool" id="changes-btn" aria-expanded="false" hidden></button>
+  <button type="button" class="tool" id="changes-btn" aria-expanded="false" aria-controls="changes" hidden></button>
+  <section id="changes" aria-label="Changes" hidden></section>
 </div>
 <!-- Bottom right, as in Figma: where you are (minimap) and how close you are (zoom), together. -->
 <div id="navigator">
@@ -260,21 +267,23 @@ svg.layer { position: absolute; left: 0; top: 0; overflow: visible; pointer-even
 </div>
 <div id="bubble" role="dialog" hidden></div>
 <div id="toast" role="status" hidden></div>
-<section id="changes" aria-label="Changes" hidden></section>
-<div id="edit-hint" role="note" hidden></div>
 <div id="viewport" tabindex="0">
   <div id="world"></div>
 </div>
 <script>
 const D = __PAYLOAD__;
 const UI = {
-  en: { key: "Key paths", all: "All paths", fit: "Fit all", ids: "Page IDs", view: "View", copy: "Copy page name", copied: "Copied", edit: "Edit mode", changes: "Changes", copyChanges: "Copy for AI agent", clear: "Clear all", clearConfirm: "Click again to clear", undo: "Undo", del: "Delete", restore: "Restore", keyPath: "Key path", noteKind: "Add note", requestKind: "Ask AI agent", noteKindTip: "Adds this text to the map as a note, as written.", requestKindTip: "Not added as text. The AI agent checks the prototype and updates this map. It does not change the product.", notePh: "Write a note…", requestPh: "What should the AI agent check or update on this map?", addRequest: "+ Ask the AI agent about this page", empty: "No changes yet. Turn on Edit mode, then edit text, delete comments, switch key paths or click a screen to add a pin.", needsTr: "Japanese needs updating", needsTrJa: "English needs updating", edited: "edited", deletedL: "delete", keyOn: "make key path", keyOff: "remove key path", newNote: "new note", newRequest: "ask AI agent", page: "page", copiedChanges: "Copied. Paste it to your AI agent (for example Claude Code or Codex).",
-        hintTitle: "Edit mode", hintSteps: ["Click any comment text to change it.", "Click a spot on a screen to add a pin. Choose “Add note” to add text to the map, or “Ask AI agent” to have the AI agent check the prototype and update the map.", "Use Key path or Delete on a card, or “+ Ask the AI agent about this page”.", "Open Changes, click “Copy for AI agent”, then paste it to your AI agent (for example Claude Code or Codex). It updates the map."], hideHint: "Hide tips",
-        howtoTitle: "How this works", howtoSteps: ["Turn on Edit mode and make your changes on the canvas.", "Check them here. Undo any you don't want.", "Click “Copy for AI agent” and paste it to your AI agent (for example Claude Code or Codex). It applies them to the map and republishes it."], keyLegend: "Key path", otherLegend: "Other path",
+  en: { key: "Key paths", all: "All paths", fit: "Fit all", ids: "Page IDs", view: "View", copy: "Copy page name", copied: "Copied", edit: "Edit mode", changes: "Changes", copyChanges: "Copy for AI agent", clear: "Clear all", clearConfirm: "Click again to clear", undo: "Undo", del: "Delete", restore: "Restore", keyPath: "Key path", noteKind: "Add note", requestKind: "Ask AI agent", noteKindTip: "Adds this text to the map as a note, as written.", requestKindTip: "Not added as text. The AI agent checks the prototype and updates this map. It does not change the product.", notePh: "Write a note…", requestPh: "What should the AI agent check or update on this map?", addRequest: "+ Ask the AI agent about this page", needsTr: "Japanese needs updating", needsTrJa: "English needs updating", edited: "edited", deletedL: "delete", keyOn: "make key path", keyOff: "remove key path", newNote: "new note", newRequest: "ask AI agent", page: "page", copiedChanges: "Copied. Paste it to your AI agent (for example Claude Code or Codex).",
+        tips: ["Click comment text to edit it.", "Click a screen to add a pin."], tipsNote: "Changes are saved in this browser only. Copy them here for your AI agent when you're done.",
+        summary: (n, p) => `${n} ${n === 1 ? "change" : "changes"} on ${p} ${p === 1 ? "page" : "pages"}`, colon: ": ",
+        sEdited: "Edited", sDeleted: "Deleted", sKeyOn: "Key path on", sKeyOff: "Key path off", sNote: "New note", sRequest: "Ask AI agent",
+        keyLegend: "Key path", otherLegend: "Other path",
         action: "Interaction", note: "Note", back: "Returns to", go: "Go to", map: "Flow map. Drag to pan, Ctrl or ⌘ + scroll to zoom, 0 to fit." },
-  ja: { key: "主要フロー", all: "すべてのフロー", fit: "全体表示", ids: "ページ ID", view: "表示", copy: "ページ名をコピー", copied: "コピーしました", edit: "編集モード", changes: "変更", copyChanges: "AI エージェント用にコピー", clear: "すべて取り消す", clearConfirm: "もう一度クリックで取り消し", undo: "元に戻す", del: "削除", restore: "元に戻す", keyPath: "主要フロー", noteKind: "補足を追加", requestKind: "AI エージェントに依頼", noteKindTip: "書いたとおりに補足としてマップに追加されます。", requestKindTip: "文言としては追加されません。AI エージェントがプロトタイプを確認してこのマップを更新します。製品は変更しません。", notePh: "補足を入力…", requestPh: "このマップで AI エージェントに確認・更新してほしいことは？", addRequest: "+ このページについて AI エージェントに依頼", empty: "変更はまだありません。「編集モード」をオンにして、文言の編集、コメントの削除、主要フローの切り替え、画面クリックでのピン追加ができます。", needsTr: "日本語の更新が必要", needsTrJa: "英語の更新が必要", edited: "編集", deletedL: "削除", keyOn: "主要フローにする", keyOff: "主要フローから外す", newNote: "新しい補足", newRequest: "AI エージェントに依頼", page: "ページ", copiedChanges: "コピーしました。AI エージェント（Claude Code や Codex など）に貼り付けてください。",
-        hintTitle: "編集モード", hintSteps: ["コメントの文言をクリックすると編集できます。", "画面上の位置をクリックするとピンを追加できます。マップに説明を足すなら「補足を追加」、AI エージェントにプロトタイプを確認してマップを更新してほしいときは「AI エージェントに依頼」を選びます。", "カードの「主要フロー」や「削除」、または「+ このページについて AI エージェントに依頼」も使えます。", "「変更」を開いて「AI エージェント用にコピー」し、AI エージェント（Claude Code や Codex など）に貼り付けると、マップが更新されます。"], hideHint: "ヒントを閉じる",
-        howtoTitle: "使い方", howtoSteps: ["「編集モード」をオンにして、キャンバス上で変更します。", "ここで変更を確認し、不要なものは元に戻します。", "「AI エージェント用にコピー」して AI エージェント（Claude Code や Codex など）に貼り付けると、マップに反映して再公開します。"], keyLegend: "主要フロー", otherLegend: "その他の遷移",
+  ja: { key: "主要フロー", all: "すべてのフロー", fit: "全体表示", ids: "ページ ID", view: "表示", copy: "ページ名をコピー", copied: "コピーしました", edit: "編集モード", changes: "変更", copyChanges: "AI エージェント用にコピー", clear: "すべて取り消す", clearConfirm: "もう一度クリックで取り消し", undo: "元に戻す", del: "削除", restore: "元に戻す", keyPath: "主要フロー", noteKind: "補足を追加", requestKind: "AI エージェントに依頼", noteKindTip: "書いたとおりに補足としてマップに追加されます。", requestKindTip: "文言としては追加されません。AI エージェントがプロトタイプを確認してこのマップを更新します。製品は変更しません。", notePh: "補足を入力…", requestPh: "このマップで AI エージェントに確認・更新してほしいことは？", addRequest: "+ このページについて AI エージェントに依頼", needsTr: "日本語の更新が必要", needsTrJa: "英語の更新が必要", edited: "編集", deletedL: "削除", keyOn: "主要フローにする", keyOff: "主要フローから外す", newNote: "新しい補足", newRequest: "AI エージェントに依頼", page: "ページ", copiedChanges: "コピーしました。AI エージェント（Claude Code や Codex など）に貼り付けてください。",
+        tips: ["コメントの文言をクリックすると編集できます。", "画面をクリックするとピンを追加できます。"], tipsNote: "変更はこのブラウザにのみ保存されます。終わったら、ここで AI エージェント用にコピーしてください。",
+        summary: (n, p) => `${p} ページ・${n} 件の変更`, colon: "：",
+        sEdited: "編集", sDeleted: "削除", sKeyOn: "主要フローにする", sKeyOff: "主要フローから外す", sNote: "新しい補足", sRequest: "AI エージェントに依頼",
+        keyLegend: "主要フロー", otherLegend: "その他の遷移",
         action: "操作", note: "補足", back: "戻り先", go: "移動", map: "フローマップ。ドラッグで移動、Ctrl または ⌘ + スクロールで拡大縮小、0 で全体表示。" },
 };
 const W = D.viewport.width, H = D.viewport.height, GAP = 70, CW = D.commentWidth || 620;
@@ -444,7 +453,7 @@ function build() {
   document.querySelector("#edit-toggle .label").textContent = UI[lang].edit;
   document.body.dataset.edit = editMode ? "on" : "off";
   updateChangesButton();
-  renderEditHint();
+  if (!changesPanel.hidden) renderChanges();
   idsBtn.querySelector(".label").textContent = UI[lang].ids; idsBtn.setAttribute("aria-checked", String(showIds)); document.body.dataset.ids = showIds ? "on" : "off";
 
   for (const band of D.bands || []) {
@@ -685,62 +694,66 @@ document.getElementById("ids-toggle").onclick = e => {
 document.getElementById("edit-toggle").onclick = e => {
   editMode = !editMode; e.currentTarget.setAttribute("aria-checked", String(editMode));
   document.body.dataset.edit = editMode ? "on" : "off";
-  renderEditHint();
   updateChangesButton();
   for (const d of world.querySelectorAll(".card [data-field]")) d.contentEditable = editMode ? "plaintext-only" : "false";
+  // The first time edit mode is turned on in this browser, open the popover once so its tips
+  // are seen; after that it opens only from Changes (n).
+  if (editMode && store.get("flow-edit-tips") !== "seen" && !collectChanges().length) { store.set("flow-edit-tips", "seen"); setChanges(true); }
 };
 const changesBtn = document.getElementById("changes-btn"), changesPanel = document.getElementById("changes");
-changesBtn.onclick = () => { changesPanel.hidden = !changesPanel.hidden; changesBtn.setAttribute("aria-expanded", String(!changesPanel.hidden)); if (!changesPanel.hidden) renderChanges(); };
+const setChanges = open => { changesPanel.hidden = !open; changesBtn.setAttribute("aria-expanded", String(open)); if (open) renderChanges(); };
+changesBtn.onclick = () => setChanges(changesPanel.hidden);
+// Closes like the View menu. A click on the canvas still does its own job (for example adds a pin).
+document.addEventListener("pointerdown", e => { if (!changesPanel.hidden && !e.target.closest("#actions")) setChanges(false); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !changesPanel.hidden) { setChanges(false); changesBtn.focus(); } });
 
-// Every pending change, with a line for people, a record for the agent and an undo.
+// Every pending change, with a full line for the copied text, a short line for the popover,
+// a record for the agent and an undo.
 function collectChanges() {
   const out = [];
   const info = {};
   for (const s of screens) for (const c of commentsFor(s)) info[c.key] = { s, c };
   const target = c => c.kind === "action" ? { transition: c.tr.id } : { note: c.index };
   const otherLang = l => l === "en" ? "ja" : "en";
+  const short = (label, detail) => detail ? label + UI[lang].colon + detail : label;
   for (const [k, after] of Object.entries(edits.text)) {
     const [ckey, field, l] = k.split("|"); const hit = info[ckey]; if (!hit) continue;
     const before = original(hit.c, field)[l] ?? "";
     const otherDone = `${ckey}|${field}|${otherLang(l)}` in edits.text;
-    out.push({ s: hit.s, line: `#${hit.c.num} ${field} (${l}) ${UI[lang].edited}: "${before}" → "${after}"`, hint: otherDone ? "" : UI[lang][l === "en" ? "needsTr" : "needsTrJa"],
+    out.push({ s: hit.s, num: hit.c.num, short: short(UI[lang].sEdited, after),
+      line: `#${hit.c.num} ${field} (${l}) ${UI[lang].edited}: "${before}" → "${after}"`, hint: otherDone ? "" : UI[lang][l === "en" ? "needsTr" : "needsTrJa"],
       record: { op: "editText", screen: hit.s.id, comment: hit.c.num, ...target(hit.c), field, lang: l, before, after, otherLanguageNeedsUpdate: !otherDone },
       undo: () => delete edits.text[k] });
   }
   for (const ckey of Object.keys(edits.del)) {
     const hit = info[ckey]; if (!hit) continue;
     const text = shown(hit.c, hit.c.kind === "action" ? "trigger" : "text");
-    out.push({ s: hit.s, line: `#${hit.c.num} ${UI[lang].deletedL}: "${text}"`, record: { op: "delete", screen: hit.s.id, comment: hit.c.num, ...target(hit.c), text }, undo: () => delete edits.del[ckey] });
+    out.push({ s: hit.s, num: hit.c.num, short: short(UI[lang].sDeleted, text),
+      line: `#${hit.c.num} ${UI[lang].deletedL}: "${text}"`, record: { op: "delete", screen: hit.s.id, comment: hit.c.num, ...target(hit.c), text }, undo: () => delete edits.del[ckey] });
   }
   for (const [tid, on] of Object.entries(edits.key)) {
     const tr = D.transitions.find(x => x.id === tid); if (!tr) continue;
-    const num = info["tr:" + tid]?.c.num;
-    out.push({ s: byId[tr.from], line: `#${num} ${on ? UI[lang].keyOn : UI[lang].keyOff}`, record: { op: "setKeyPath", transition: tid, key: on }, undo: () => delete edits.key[tid] });
+    const hit = info["tr:" + tid], num = hit?.c.num;
+    out.push({ s: byId[tr.from], num, short: short(on ? UI[lang].sKeyOn : UI[lang].sKeyOff, hit ? shown(hit.c, "trigger") : ""),
+      line: `#${num} ${on ? UI[lang].keyOn : UI[lang].keyOff}`, record: { op: "setKeyPath", transition: tid, key: on }, undo: () => delete edits.key[tid] });
   }
   for (const a of edits.adds) {
     const hit = info["add:" + a.id]; if (!hit) continue;
     const where = a.anchor ? `@ (${a.anchor.x + a.anchor.w / 2}, ${a.anchor.y + a.anchor.h / 2})` : `(${UI[lang].page})`;
-    out.push({ s: hit.s, line: `#${hit.c.num} ${a.kind === "request" ? UI[lang].newRequest : UI[lang].newNote} ${where}: "${a.text}"`,
+    out.push({ s: hit.s, num: hit.c.num, short: short(a.kind === "request" ? UI[lang].sRequest : UI[lang].sNote, a.text),
+      line: `#${hit.c.num} ${a.kind === "request" ? UI[lang].newRequest : UI[lang].newNote} ${where}: "${a.text}"`,
       record: { op: a.kind === "request" ? "addRequest" : "addNote", screen: a.screen, comment: hit.c.num, anchor: a.anchor, lang: a.lang, text: a.text },
       undo: () => { edits.adds = edits.adds.filter(x => x !== a); } });
   }
-  return out;
-}
-const editHint = document.getElementById("edit-hint");
-function renderEditHint() {
-  const dismissed = store.get("flow-edit-hint") === "hidden";
-  editHint.hidden = !editMode || dismissed;
-  if (editHint.hidden) return;
-  const text = el("div"); text.append(el("strong", "", UI[lang].hintTitle));
-  const ol = el("ol"); for (const step of UI[lang].hintSteps) ol.append(el("li", "", step)); text.append(ol);
-  const close = el("button", "", "×"); close.type = "button"; close.title = UI[lang].hideHint; close.setAttribute("aria-label", UI[lang].hideHint);
-  close.onclick = () => { store.set("flow-edit-hint", "hidden"); renderEditHint(); };
-  editHint.replaceChildren(text, close);
+  // In map order (page, then pin number), so the list reads like the canvas.
+  const order = s => screens.indexOf(s);
+  return out.sort((a, b) => order(a.s) - order(b.s) || a.num - b.num);
 }
 function updateChangesButton() {
   const n = collectChanges().length;
   changesBtn.hidden = n === 0 && !editMode;
   changesBtn.textContent = `${UI[lang].changes} (${n})`;
+  if (changesBtn.hidden && !changesPanel.hidden) setChanges(false);
 }
 function screenLabel(s) { return lang === "ja" ? `${s.id}「${t(s.title)}」` : `${s.id} "${t(s.title)}"`; }
 function changesText(list) {
@@ -753,42 +766,57 @@ function changesText(list) {
   for (const [id, items] of groups) body += `\n${screenLabel(byId[id])}\n` + items.map(c => `- ${c.line}${c.hint ? ` (${c.hint})` : ""}`).join("\n") + "\n";
   return head + body + "\n```json\n" + JSON.stringify({ changes: list.map(c => c.record) }, null, 2) + "\n```\n";
 }
-let clearArmed = false;
+let clearArmed = false, changesExpanded = false;
 function renderChanges() {
   const list = collectChanges();
-  const header = el("header"); header.append(el("strong", "", `${UI[lang].changes} (${list.length})`));
-  const close = el("button", "tool", "×"); close.type = "button"; close.setAttribute("aria-label", "Close");
-  close.onclick = () => { changesPanel.hidden = true; changesBtn.setAttribute("aria-expanded", "false"); };
-  header.append(close);
-  const howto = el("div", "howto"); howto.append(el("strong", "", UI[lang].howtoTitle));
-  const steps = el("ol"); for (const step of UI[lang].howtoSteps) steps.append(el("li", "", step)); howto.append(steps);
-  const body = el("div", "list");
-  if (!list.length) body.append(el("div", "empty", UI[lang].empty));
+  if (!list.length) {
+    const tips = el("ul", "tips");
+    for (const tip of UI[lang].tips) tips.append(el("li", "", tip));
+    tips.append(el("li", "muted", UI[lang].tipsNote));
+    changesPanel.replaceChildren(tips);
+    return;
+  }
   const groups = new Map();
   for (const c of list) { if (!groups.has(c.s.id)) groups.set(c.s.id, []); groups.get(c.s.id).push(c); }
-  for (const [id, items] of groups) {
-    const g = el("div"); const title = el("div", "group-title", t(byId[id].title)); g.append(title);
-    for (const c of items) {
-      const row = el("div", "item"); const text = el("span", "", c.line);
-      if (c.hint) text.append(el("span", "hint", ` · ${c.hint}`));
-      const undo = el("button", "", UI[lang].undo); undo.type = "button";
-      undo.onclick = () => { c.undo(); saveEdits(); rebuild(); };
-      row.append(text, undo); g.append(row);
+  // Collapsed by default: the canvas already marks each change, so the list is for checking
+  // or undoing one, not something every reader needs before copying.
+  const summary = el("button", "summary"); summary.type = "button";
+  summary.setAttribute("aria-expanded", String(changesExpanded)); summary.setAttribute("aria-controls", "changes-list");
+  const chev = el("span", "chev"); chev.setAttribute("aria-hidden", "true");
+  chev.innerHTML = '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5 8 6l-3.5 3.5"/></svg>';
+  summary.append(chev, el("span", "", UI[lang].summary(list.length, groups.size)));
+  summary.onclick = () => { changesExpanded = !changesExpanded; renderChanges(); changesPanel.querySelector(".summary").focus(); };
+  const parts = [summary];
+  if (changesExpanded) {
+    const body = el("div", "list"); body.id = "changes-list";
+    for (const [id, items] of groups) {
+      // The page name jumps to that page, where each change is marked on its card. The popover
+      // closes so it does not cover the cards it points at.
+      const go = el("button", "group-title", t(byId[id].title)); go.type = "button"; go.title = `${UI[lang].go}: ${t(byId[id].title)}`;
+      const arrow = el("span", "arrow", "→"); arrow.setAttribute("aria-hidden", "true"); go.append(arrow);
+      go.onclick = () => { setChanges(false); flyTo(id); viewport.focus({ preventScroll: true }); };
+      body.append(go);
+      for (const c of items) {
+        const row = el("div", "item"); const text = el("span", "text", c.short); text.title = c.short;
+        const undo = el("button", "", UI[lang].undo); undo.type = "button";
+        undo.onclick = () => { c.undo(); saveEdits(); rebuild(); (changesPanel.querySelector(".summary") || changesBtn).focus(); };
+        row.append(el("span", "n", `#${c.num}`), text, undo); body.append(row);
+      }
     }
-    body.append(g);
+    parts.push(body);
   }
   const footer = el("footer");
-  const clear = el("button", "", UI[lang].clear); clear.type = "button"; clear.disabled = !list.length;
+  const clear = el("button", "quiet", UI[lang].clear); clear.type = "button";
   clear.onclick = () => {
     if (!clearArmed) { clearArmed = true; clear.textContent = UI[lang].clearConfirm; setTimeout(() => { clearArmed = false; clear.textContent = UI[lang].clear; }, 3000); return; }
     clearArmed = false; edits = { text: {}, del: {}, key: {}, adds: [] }; saveEdits(); rebuild();
   };
-  const copy = el("button", "primary"); copy.type = "button"; copy.disabled = !list.length;
+  const copy = el("button", "primary"); copy.type = "button";
   copy.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>';
   copy.append(UI[lang].copyChanges);
   copy.onclick = () => copyText(changesText(list), copy, UI[lang].copiedChanges);
   footer.append(clear, copy);
-  changesPanel.replaceChildren(header, howto, body, footer);
+  changesPanel.replaceChildren(...parts, footer);
 }
 
 function copyText(text, btn, message) {
