@@ -49,7 +49,6 @@ Open [`examples/kiln-tasks/kiln-flow.html`](examples/kiln-tasks/kiln-flow.html) 
 - `scripts/render_flow.py`: validates a bundle and renders one offline HTML file.
 - `scripts/to_artifact.py`: optional; converts a rendered map into a claude.ai Artifact page.
 - `examples/kiln-tasks/`: the fictional demo app, its captures and spec, and the rendered map.
-- `docs/`: preview images.
 
 ### License
 
@@ -100,7 +99,6 @@ python3 scripts/render_flow.py examples/kiln-tasks/bundle --out my-wireflow.html
 - `scripts/render_flow.py`：入力を検証し、オフラインで開ける HTML ファイルを 1 つ生成します。
 - `scripts/to_artifact.py`：任意。生成したマップを claude.ai の Artifact ページに変換します。
 - `examples/kiln-tasks/`：架空のデモアプリ、キャプチャ、spec、生成済みのマップ。
-- `docs/`：プレビュー画像。
 
 ### ライセンス
 
