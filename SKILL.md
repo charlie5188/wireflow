@@ -96,7 +96,7 @@ Layout, as in FigJam:
 On the canvas:
 
 - Drag pans; plain scroll pans; Ctrl or ⌘ plus scroll zooms at the pointer; `+`, `-` and `0` (fit all) work from the keyboard. `#SCREEN-ID` in the URL opens on that screen.
-- **Figma view** (in the View menu, or ⌘\ / Ctrl+\) reloads the page as the whole map at 100 % on one plain, scrollable page with no toolbars; Esc or ⌘\ returns to the spot the reader left. `?figma` (or `?figma=ja`, `?figma=en`) opens it directly. It keeps the language, All paths and Page IDs last set in this browser (`=en` or `=ja` picks the language) and leaves out the edits saved in this browser. When someone wants the map in Figma, have them open Figma view and import the page with Figma's browser extension (a local file needs **Allow access to file URLs** turned on for the extension). If you have a tool that imports a web page into Figma, import the `?figma` page, never the normal view: that view shows only what fits in the window, too small to read. Do not rebuild the map in Figma by hand.
+- **Figma view** (in the View menu, or ⌘\ / Ctrl+\) reloads the page as the whole map at 100 % on one plain, scrollable page with no toolbars; Esc or ⌘\ returns to the spot the reader left. `?figma` (or `?figma=ja`, `?figma=en`) opens it directly. It keeps the language, All paths and Page IDs last set in this browser (`=en` or `=ja` picks the language) and leaves out the edits saved in this browser. When someone wants the map in Figma and still working, have them drag the HTML file onto a Figma canvas: it becomes a code layer that they play. When they want regular, static Figma layers, have them open Figma view and import the page with Figma's browser extension (a local file needs **Allow access to file URLs** turned on for the extension). If you have a tool that imports a web page into Figma, import the `?figma` page, never the normal view: that view shows only what fits in the window, too small to read. Do not rebuild the map in Figma by hand.
 - Clicking a screen zooms to it and its comments. A comment's chip jumps to its target screen.
 - Hovering a screen shows all of its arrows, even with All paths off, and dims the rest.
 - Pins sit just outside the top corner of the control they mark, so the control stays visible. Hovering a pin outlines the control, lights its card, arrow and leader line, and shows the comment in a bubble beside the pin. Clicking a pin keeps the bubble open (Esc or a click on the canvas closes it). Hovering a card lights the same pin, outline and arrow.
@@ -131,10 +131,15 @@ A pasted text that starts with `Flow map changes:` came from Copy for AI agent. 
 
 ## Sharing
 
-The map is one file with everything embedded, so it can be shared as an attachment or hosted on any static host (an internal file share, GitHub Pages, an S3 bucket). Hosting it keeps one link that you update in place.
+The map is one file with everything embedded, so it can be shared as an attachment or hosted on any static host (an internal file share, GitHub Pages, an S3 bucket). Hosting it keeps one link that you update in place. People can also drop the file where they already work:
+
+- **Notion**: dragging the file into a Notion page makes an embedded web page that works in the page.
+- **Figma**: dragging the file onto a Figma canvas makes a code layer; pressing play makes the map usable there. For static Figma layers instead, use Figma view (see "On the canvas").
+
+When sharing or hosting:
 
 - Keep `flow-spec.json` next to the published page, so an agent given the link can read the exact spec.
-- If the captures show unreleased product, host it where only the intended people can open it.
+- If the captures show unreleased product, share or host it only where the intended people can open it. Notion and Figma keep their own copy of the file.
 - To update, re-render and replace the file at the same location.
 
 ### If your agent can publish claude.ai Artifacts

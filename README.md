@@ -42,9 +42,20 @@ python3 scripts/render_flow.py examples/kiln-tasks/bundle --out my-wireflow.html
 
 Open [`examples/kiln-tasks/kiln-flow.html`](examples/kiln-tasks/kiln-flow.html) after cloning to try a finished map. See [SKILL.md](SKILL.md) for the procedure, the `flow-spec.json` format and how a pasted change list is applied.
 
-### Bring a map into Figma
+### Share a map
 
-Open **View** and choose **Figma view**, or press ⌘\ (Ctrl+\ on Windows). The page then shows the whole map at full size, without toolbars, in the language and View settings you are using. Import that page with Figma's browser extension, then press Esc to go back. The result in Figma is a static copy: hover, the language switch and edit mode work only in the HTML file.
+A map is one HTML file with every screen and comment inside it, so you can pass it on like any file.
+
+- **Open it.** Double-click the file. It opens in any browser, offline, with no setup.
+- **Send it.** Share it like any file, in Slack, email or Drive, or put it on a static host to keep one link.
+- **Put it in Notion.** Drag the file into a Notion page. It becomes an embedded web page that people can use in the page.
+- **Put it in Figma.** Drag the file onto a Figma canvas. It becomes a code layer: press play to use the map there, or play it full screen.
+
+The file is a snapshot, so render and share it again after changes. It holds every capture, so share it only where everyone who can open it may see the product.
+
+#### Figma layers instead of a code layer
+
+To get the map as regular Figma layers, open **View** and choose **Figma view**, or press ⌘\ (Ctrl+\ on Windows). The page then shows the whole map at full size, without toolbars, in the language and View settings you are using. Import that page with Figma's browser extension, then press Esc to go back. This copy is static, so hover, the language switch and edit mode do not work in it. To keep the map working in Figma, drag the file in as a code layer instead.
 
 To open the Figma view from a link, add `?figma` to the end of the map's address (`?figma=en` or `?figma=ja` picks the language).
 
@@ -100,9 +111,20 @@ python3 scripts/render_flow.py examples/kiln-tasks/bundle --out my-wireflow.html
 
 完成例はクローン後に [`examples/kiln-tasks/kiln-flow.html`](examples/kiln-tasks/kiln-flow.html) を開いて確認できます。手順、`flow-spec.json` の形式、貼り付けられた変更リストの反映方法は [SKILL.md](SKILL.md) を参照してください。
 
-### Figma に取り込む
+### マップを共有する
 
-「表示」メニューの **Figma 用の表示** を選ぶか、⌘\（日本語キーボードでは ⌘¥、Windows では Ctrl+\）を押します。ツールバーのない、マップ全体を原寸で並べたページになります。言語と「表示」メニューの設定は今のままです。このページを Figma のブラウザ拡張機能で取り込み、Esc で元の表示に戻ります。Figma に入るのは静止したコピーです。ホバー、言語の切り替え、編集モードは HTML ファイルでだけ使えます。
+マップは、すべての画面とコメントを含む 1 つの HTML ファイルです。普通のファイルと同じように渡せます。
+
+- **開く。** ファイルをダブルクリックします。準備なしで、オフラインでもどのブラウザでも開けます。
+- **送る。** Slack、メール、Drive など、普通のファイルと同じように共有できます。静的ホスティングに置けば、同じリンクを使い続けられます。
+- **Notion に置く。** ファイルを Notion のページにドラッグすると、埋め込みのウェブページになり、ページの中でそのまま操作できます。
+- **Figma に置く。** ファイルを Figma のキャンバスにドラッグすると、コードレイヤーになります。再生ボタンを押すと Figma の中でマップを操作でき、フルスクリーンでも再生できます。
+
+ファイルはその時点のスナップショットなので、変更したら生成し直して、もう一度共有してください。すべてのキャプチャが含まれるので、開ける人全員がその製品を見てよい場所でだけ共有してください。
+
+#### コードレイヤーではなく Figma のレイヤーとして取り込む
+
+普通の Figma のレイヤーとして取り込むには、「表示」メニューの **Figma 用の表示** を選ぶか、⌘\（日本語キーボードでは ⌘¥、Windows では Ctrl+\）を押します。ツールバーのない、マップ全体を原寸で並べたページになります。言語と「表示」メニューの設定は今のままです。このページを Figma のブラウザ拡張機能で取り込み、Esc で元の表示に戻ります。このコピーは静止していて、ホバー、言語の切り替え、編集モードは使えません。操作できる状態で Figma に置くには、ファイルをそのままドラッグしてコードレイヤーにします。
 
 リンクから開く場合は、マップのアドレスの末尾に `?figma` を付けます（言語は `?figma=en` または `?figma=ja` で指定できます）。
 
